@@ -9,20 +9,25 @@
   box-sizing: border-box;
 }
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-family: Helvetica, Arial, sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   color: white;
 }
 
 h1 {
-  margin: 20px;
-  font-size: 28px;
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 24px;
   font-weight: 300;
   text-align: center;
   flex-shrink: 0;
@@ -31,20 +36,24 @@ h1 {
 .columns {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .col-live {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 20px;
 }
 
 .col-history {
-  width: 280px;
+  width: 380px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -52,8 +61,8 @@ h1 {
 
 .col-history h2 {
   margin: 0;
-  padding: 16px 20px;
-  font-size: 13px;
+  padding: 14px 20px;
+  font-size: 12px;
   font-weight: 400;
   opacity: 0.6;
   text-transform: uppercase;
@@ -64,8 +73,8 @@ h1 {
 
 .history-list {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 8px 0;
 }
 
 .history-list::-webkit-scrollbar {
@@ -80,33 +89,38 @@ h1 {
 }
 
 .history-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  padding: 7px 20px;
-  font-size: 14px;
-  animation: slideIn 0.15s ease-out;
+  gap: 12px;
+  padding: 8px 20px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  animation: slideIn 0.15s ease-out;
 }
 
 .history-item:first-child {
   background: rgba(255, 255, 255, 0.1);
 }
 
-.history-label {
+.history-combo {
   font-weight: 600;
   font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-meta {
   font-family: monospace;
-  font-size: 11px;
-  opacity: 0.55;
+  font-size: 10px;
+  opacity: 0.5;
   text-align: right;
+  white-space: nowrap;
+  line-height: 1.6;
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(-6px); }
+  from { opacity: 0; transform: translateY(-5px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -117,7 +131,7 @@ h1 {
   justify-content: center;
   align-items: center;
   padding: 40px;
-  min-height: 240px;
+  min-height: 200px;
 }
 
 .key {
@@ -147,7 +161,7 @@ h1 {
 }
 
 .key-info {
-  margin-top: 20px;
+  margin-top: 16px;
   text-align: center;
   font-size: 12px;
   opacity: 0.8;
@@ -158,11 +172,11 @@ h1 {
 }
 
 .instructions {
+  margin-top: 20px;
   text-align: center;
   font-size: 13px;
-  opacity: 0.5;
-  padding: 16px 20px;
-  flex-shrink: 0;
+  opacity: 0.45;
+  padding: 0 20px;
 }
   </style>
 </head>
@@ -186,29 +200,30 @@ const keyDisplay = document.getElementById('keyDisplay');
 const keyInfo = document.getElementById('keyInfo');
 const historyList = document.getElementById('historyList');
 const pressedKeys = new Set();
-const MAX_HISTORY = 60;
+const MAX_HISTORY = 80;
 
-function getKeyLabel(event) {
-  const key = event.key;
+const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'AltGraph']);
 
-  // Special key mappings
-  const specialKeys = {
-    ' ': 'Space',
-    'Control': 'Ctrl',
-    'Meta': navigator.platform.includes('Mac') ? 'Cmd' : 'Win',
-    'ArrowUp': '↑',
-    'ArrowDown': '↓',
-    'ArrowLeft': '←',
-    'ArrowRight': '→',
-    'Enter': '↵ Enter',
-    'Backspace': '⌫ Backspace',
-    'Tab': '⇥ Tab',
-    'Shift': '⇧ Shift',
-    'CapsLock': '⇪ Caps',
-    'Escape': 'Esc'
-  };
+const isMac = navigator.platform.includes('Mac');
 
-  return specialKeys[key] || key;
+const SPECIAL_LABELS = {
+  ' ': 'Space',
+  'Control': 'Ctrl',
+  'Meta': isMac ? 'Cmd' : 'Win',
+  'ArrowUp': '↑',
+  'ArrowDown': '↓',
+  'ArrowLeft': '←',
+  'ArrowRight': '→',
+  'Enter': '↵ Enter',
+  'Backspace': '⌫ Backspace',
+  'Tab': '⇥ Tab',
+  'Shift': '⇧ Shift',
+  'CapsLock': '⇪ Caps',
+  'Escape': 'Esc'
+};
+
+function getKeyLabel(key) {
+  return SPECIAL_LABELS[key] || key;
 }
 
 function updateDisplay() {
@@ -236,48 +251,58 @@ function updateKeyInfo(event) {
 }
 
 function pushHistory(event) {
+  // Build combo label from all currently pressed keys (modifiers first, then this key)
+  const modifierOrder = ['Meta', 'Control', 'Alt', 'Shift'];
+  const activeModifiers = modifierOrder.filter(m => {
+    if (m === event.key) return false; // don't double-count the triggering key if it's a modifier
+    return [...pressedKeys].some(k => k.key === m);
+  });
+
+  const parts = [...activeModifiers.map(m => getKeyLabel(m)), getKeyLabel(event.key)];
+  const comboLabel = parts.join(' + ');
+
   const item = document.createElement('div');
   item.className = 'history-item';
   item.innerHTML = `
-    <span class="history-label">${getKeyLabel(event)}</span>
-    <span class="history-meta">${event.code}<br>${event.key === ' ' ? 'Space' : event.key}</span>
+    <span class="history-combo">${comboLabel}</span>
+    <span class="history-meta">key: ${event.key === ' ' ? 'Space' : event.key}<br>code: ${event.code}<br>keyCode: ${event.keyCode}</span>
   `;
   historyList.prepend(item);
-  // Trim excess entries
+
   while (historyList.children.length > MAX_HISTORY) {
     historyList.removeChild(historyList.lastChild);
   }
 }
 
 document.addEventListener('keydown', (e) => {
-  // Prevent default for some keys to avoid unwanted behavior
   if (['Tab', 'F5', 'F11'].includes(e.key)) {
     e.preventDefault();
   }
 
   const keyData = {
     code: e.code,
-    label: getKeyLabel(e)
+    key: e.key,
+    label: getKeyLabel(e.key)
   };
 
-  // Remove any existing entry with same code
+  // Remove any existing entry with same code (handles held keys)
   pressedKeys.forEach(k => {
-    if (k.code === keyData.code) {
-      pressedKeys.delete(k);
-    }
+    if (k.code === keyData.code) pressedKeys.delete(k);
   });
 
   pressedKeys.add(keyData);
   updateDisplay();
   updateKeyInfo(e);
-  pushHistory(e);
+
+  // Only push history for non-modifier keys — combo is captured via pressedKeys
+  if (!MODIFIERS.has(e.key)) {
+    pushHistory(e);
+  }
 });
 
 document.addEventListener('keyup', (e) => {
   pressedKeys.forEach(k => {
-    if (k.code === e.code) {
-      pressedKeys.delete(k);
-    }
+    if (k.code === e.code) pressedKeys.delete(k);
   });
   updateDisplay();
   if (pressedKeys.size === 0) {
@@ -285,14 +310,12 @@ document.addEventListener('keyup', (e) => {
   }
 });
 
-// Handle window blur to clear keys
 window.addEventListener('blur', () => {
   pressedKeys.clear();
   updateDisplay();
   updateKeyInfo(null);
 });
 
-// Initial display
 updateDisplay();
 </script>
 </body>
