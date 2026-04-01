@@ -325,7 +325,7 @@ document.addEventListener('keydown', (e) => {
   updateDisplay();
   updateKeyInfo(e);
 
-  pushHistory(e);
+  if (!e.repeat) pushHistory(e);
 });
 
 document.addEventListener('keyup', (e) => {
