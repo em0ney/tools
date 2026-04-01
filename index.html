@@ -3,22 +3,116 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>tools</title>
+  <title>tools — Elliott Spira</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 60px auto; padding: 0 20px; }
-    h1 { font-weight: 300; }
-    ul { list-style: none; padding: 0; }
-    li { margin: 12px 0; }
-    a { text-decoration: none; color: #4a4a9c; }
-    a:hover { text-decoration: underline; }
-    .desc { color: #666; font-size: 0.9em; margin-left: 8px; }
+    :root {
+      --bg: #0a0a0a;
+      --text: #e5e5e5;
+      --muted: #737373;
+      --subtle: #404040;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 20px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      max-width: 41.25rem;
+      margin: 0 auto;
+      padding: 3.5rem 1.5rem;
+    }
+
+    a {
+      color: var(--text);
+      text-decoration: none;
+    }
+    a:hover { color: #fff; }
+
+    header { margin-bottom: 3rem; }
+
+    nav {
+      display: flex;
+      gap: 1.25rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    nav a { color: var(--muted); }
+    nav a:hover { color: #fff; }
+
+    main { display: flex; flex-direction: column; gap: 3rem; }
+
+    .section-label {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    li {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .tool-name { font-weight: 500; }
+    .tool-desc { color: var(--muted); font-size: 0.9rem; }
+
+    footer {
+      margin-top: 5rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--subtle);
+      display: flex;
+      gap: 1.5rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    footer a { color: var(--muted); }
+    footer a:hover { color: #fff; }
+    footer .copy { margin-left: auto; }
   </style>
 </head>
 <body>
-  <h1>tools</h1>
-  <p>Single-file HTML+JS utilities.</p>
-  <ul>
-    <li><a href="keyboard-debug.html">keyboard-debug</a><span class="desc">— debug keyboard events in real time</span></li>
-  </ul>
+  <header>
+    <nav>
+      <a href="https://elliottspira.com">elliott spira</a>
+    </nav>
+  </header>
+
+  <main>
+    <section>
+      <p class="section-label">── tools ──</p>
+      <ul>
+        <li>
+          <a href="keyboard-debug.html" class="tool-name">keyboard-debug</a>
+          <span class="tool-desc">— debug keyboard events in real time</span>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <a href="https://github.com/em0ney/tools" target="_blank" rel="noopener">github</a>
+    <span class="copy">&copy; <script>document.write(new Date().getFullYear())</script></span>
+  </footer>
 </body>
 </html>
