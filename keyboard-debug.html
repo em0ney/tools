@@ -325,10 +325,7 @@ document.addEventListener('keydown', (e) => {
   updateDisplay();
   updateKeyInfo(e);
 
-  // Only push history for non-modifier keys — combo is captured via pressedKeys
-  if (!MODIFIERS.has(e.key)) {
-    pushHistory(e);
-  }
+  pushHistory(e);
 });
 
 document.addEventListener('keyup', (e) => {
