@@ -32,11 +32,38 @@ Inspired by Simon Willison's approach: https://simonwillison.net/2025/Dec/10/htm
 - Prefer CORS-enabled public APIs (GitHub, PyPI, Bluesky, etc.).
 - For LLM APIs (Anthropic, OpenAI), prompt the user to enter their API key and store it in localStorage.
 
+## Footer
+
+Every tool must include a footer with two elements:
+
+- **Index link** — `← tools` linking to `index.html`
+- **Last updated date** — fetched async from the GitHub API on page load, displayed as e.g. `updated 1 Apr 2025`
+
+Fetch the date like this (replace `tool-name.html` with the actual filename):
+
+```js
+fetch('https://api.github.com/repos/em0ney/tools/commits?path=tool-name.html&per_page=1')
+  .then(r => r.json())
+  .then(data => {
+    const date = data?.[0]?.commit?.committer?.date;
+    if (date) {
+      const formatted = new Date(date).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+      document.getElementById('lastUpdated').textContent = `updated ${formatted}`;
+    }
+  })
+  .catch(() => {});
+```
+
+The footer should be pinned to the bottom of the page (or the relevant column if the layout is split). See `keyboard-debug.html` for the reference implementation.
+
 ## Adding a New Tool
 
 1. Create `tool-name.html` in the repo root.
 2. Add a link + description to `index.html`.
-3. Test by opening the file directly in a browser before committing.
+3. Add the standard footer (index link + last-updated date).
+4. Test by opening the file directly in a browser before committing.
 
 ## Reference Implementation
 
