@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>short calc</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      background: #0a0a0a;
+      color: #e5e5e5;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Left column */
+    .col-left {
+      flex: 0 0 65%;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid #1f1f1f;
+      min-width: 0;
+    }
+
+    .col-left-header {
+      flex-shrink: 0;
+      padding: 14px 20px;
+      border-bottom: 1px solid #1f1f1f;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ticker-input {
+      background: #151515;
+      border: 1px solid #2a2a2a;
+      color: #e5e5e5;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 110px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .ticker-input::placeholder { color: #404040; text-transform: none; }
+    .ticker-input:focus { outline: none; border-color: #444; }
+
+    .btn {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #e5e5e5;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: #222; border-color: #3a3a3a; }
+    .btn:active { background: #111; }
+
+    .btn-clear { color: #555; }
+    .btn-clear:hover { color: #aaa; }
+
+    #stockName {
+      color: #555;
+      font-size: 12px;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .period-tabs {
+      flex-shrink: 0;
+      display: flex;
+      gap: 2px;
+      padding: 8px 16px;
+      border-bottom: 1px solid #1f1f1f;
+    }
+
+    .tab {
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #555;
+      font-size: 12px;
+      font-weight: 500;
+      background: none;
+      border: none;
+      transition: color 0.1s;
+    }
+
+    .tab:hover { color: #aaa; }
+    .tab.active { background: #1f1f1f; color: #e5e5e5; }
+
+    .error-banner {
+      flex-shrink: 0;
+      background: #1c0505;
+      border-bottom: 1px solid #3b0a0a;
+      color: #fca5a5;
+      padding: 6px 20px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .chart-area {
+      flex: 1;
+      position: relative;
+      padding: 16px 20px 8px;
+      min-height: 0;
+    }
+
+    .chart-area canvas { cursor: crosshair; }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 10, 10, 0.75);
+      color: #555;
+      font-size: 13px;
+    }
+
+    .chart-hint {
+      flex-shrink: 0;
+      text-align: center;
+      color: #3a3a3a;
+      font-size: 11px;
+      padding: 6px 20px 10px;
+    }
+
+    /* Right column */
+    .col-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 18px 16px;
+      gap: 18px;
+      min-width: 0;
+    }
+
+    .panel-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #404040;
+      margin-bottom: 8px;
+    }
+
+    .point-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 10px;
+      background: #0f0f0f;
+      border-radius: 4px;
+      border: 1px solid #1f1f1f;
+      margin-bottom: 6px;
+    }
+
+    .point-marker {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .point-marker.entry { color: #fbbf24; }
+    .point-marker.cover { color: #f87171; }
+
+    .point-date {
+      font-size: 11px;
+      color: #404040;
+      margin-top: 2px;
+    }
+
+    .point-price {
+      font-size: 15px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .input-label {
+      font-size: 11px;
+      color: #555;
+    }
+
+    .num-input {
+      background: #151515;
+      border: 1px solid #2a2a2a;
+      color: #e5e5e5;
+      padding: 7px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .num-input:focus { outline: none; border-color: #444; }
+
+    .results {
+      background: #0f0f0f;
+      border: 1px solid #1f1f1f;
+      border-radius: 6px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .result-name { font-size: 12px; color: #555; }
+
+    .result-value {
+      font-size: 14px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result-value.profit { color: #4ade80; }
+    .result-value.loss   { color: #f87171; }
+    .result-value.muted  { color: #aaa; }
+
+    .result-net {
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .result-divider {
+      border: none;
+      border-top: 1px solid #1f1f1f;
+    }
+
+    .placeholder-text {
+      color: #333;
+      font-size: 12px;
+      text-align: center;
+      padding: 16px 0;
+      line-height: 1.8;
+    }
+
+    /* Footer */
+    .footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      border-top: 1px solid #151515;
+      font-size: 12px;
+      opacity: 0.45;
+    }
+
+    .footer a { color: #e5e5e5; text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="col-left">
+      <div class="col-left-header">
+        <input type="text" class="ticker-input" id="tickerInput" placeholder="NVDA" maxlength="10" autocomplete="off" spellcheck="false">
+        <button class="btn" id="loadBtn">Load</button>
+        <span id="stockName"></span>
+        <button class="btn btn-clear" id="clearBtn">Clear</button>
+      </div>
+
+      <div class="period-tabs">
+        <button class="tab active" data-period="1D">1D</button>
+        <button class="tab" data-period="1W">1W</button>
+        <button class="tab" data-period="1M">1M</button>
+        <button class="tab" data-period="6M">6M</button>
+        <button class="tab" data-period="YTD">YTD</button>
+      </div>
+
+      <div id="errorBanner" class="error-banner"></div>
+
+      <div class="chart-area" id="chartArea">
+        <canvas id="priceChart"></canvas>
+        <div id="loadingOverlay" class="loading-overlay">Loading…</div>
+      </div>
+
+      <div class="chart-hint" id="chartHint">Enter a ticker and click Load to begin</div>
+    </div>
+
+    <div class="col-right">
+      <div>
+        <div class="panel-label">Position</div>
+        <div class="point-row">
+          <div>
+            <div class="point-marker entry">▼ SHORT ENTRY</div>
+            <div class="point-date" id="entryDate">—</div>
+          </div>
+          <div class="point-price" id="entryPrice">—</div>
+        </div>
+        <div class="point-row">
+          <div>
+            <div class="point-marker cover">▲ COVER</div>
+            <div class="point-date" id="coverDate">—</div>
+          </div>
+          <div class="point-price" id="coverPrice">—</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-label">Inputs</div>
+        <div class="input-row">
+          <label class="input-label" for="sharesInput">Shares</label>
+          <input type="number" class="num-input" id="sharesInput" value="100" min="1" step="1">
+        </div>
+        <div class="input-row">
+          <label class="input-label" for="borrowRateInput">Annual borrow rate (%)</label>
+          <input type="number" class="num-input" id="borrowRateInput" value="3" min="0" max="200" step="0.1">
+        </div>
+      </div>
+
+      <div>
+        <div class="panel-label">Results</div>
+        <div id="resultsPanel">
+          <div class="placeholder-text">Click a point to set entry<br>click again to set cover</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="index.html">← tools</a>
+    <span id="lastUpdated"></span>
+  </div>
+
+  <script>
+    const PERIODS = {
+      '1D':  { interval: '5m',  range: '1d'  },
+      '1W':  { interval: '60m', range: '5d'  },
+      '1M':  { interval: '1d',  range: '1mo' },
+      '6M':  { interval: '1d',  range: '6mo' },
+      'YTD': { interval: '1d',  range: 'ytd' },
+    };
+
+    let chartInstance = null;
+    let chartData = { labels: [], prices: [], timestamps: [] };
+    let entryPoint = null;
+    let coverPoint = null;
+    let currentPeriod = '1D';
+    let currentTicker = '';
+
+    const $ = id => document.getElementById(id);
+
+    const fmt$ = v => v == null ? '—' : '$' + v.toFixed(2);
+    const fmtPL = v => {
+      const sign = v >= 0 ? '+' : '−';
+      return sign + '$' + Math.abs(v).toFixed(2);
+    };
+    const fmtPointDate = (ts) => {
+      const d = new Date(ts * 1000);
+      if (currentPeriod === '1D') {
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      }
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+    const fmtLabel = (ts) => {
+      const d = new Date(ts * 1000);
+      if (currentPeriod === '1D') {
+        return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    // Custom plugin to draw entry/cover markers and shaded region
+    const markerPlugin = {
+      id: 'shortMarkers',
+      afterDraw(chart) {
+        if (!entryPoint) return;
+        const { ctx, chartArea } = chart;
+        const meta = chart.getDatasetMeta(0);
+        if (!meta.data.length) return;
+
+        const ep = meta.data[entryPoint.index];
+        const cp = coverPoint ? meta.data[coverPoint.index] : null;
+
+        ctx.save();
+
+        // Shaded region between entry and cover
+        if (cp) {
+          ctx.fillStyle = 'rgba(255,255,255,0.03)';
+          const x1 = Math.min(ep.x, cp.x);
+          const x2 = Math.max(ep.x, cp.x);
+          ctx.fillRect(x1, chartArea.top, x2 - x1, chartArea.bottom - chartArea.top);
+        }
+
+        // Entry vertical line
+        ctx.setLineDash([4, 3]);
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.moveTo(ep.x, chartArea.top);
+        ctx.lineTo(ep.x, chartArea.bottom);
+        ctx.stroke();
+
+        // Entry dot
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(ep.x, ep.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Entry label
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = '9px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('SHORT', ep.x, chartArea.top + 10);
+
+        // Cover markers
+        if (cp) {
+          ctx.setLineDash([4, 3]);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#f87171';
+          ctx.beginPath();
+          ctx.moveTo(cp.x, chartArea.top);
+          ctx.lineTo(cp.x, chartArea.bottom);
+          ctx.stroke();
+
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#f87171';
+          ctx.beginPath();
+          ctx.arc(cp.x, cp.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#f87171';
+          ctx.font = '9px system-ui';
+          ctx.textAlign = 'center';
+          ctx.fillText('COVER', cp.x, chartArea.top + 10);
+        }
+
+        ctx.restore();
+      }
+    };
+
+    function buildChart() {
+      const canvas = $('priceChart');
+      if (chartInstance) chartInstance.destroy();
+
+      const labels = chartData.timestamps.map(fmtLabel);
+
+      chartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data: chartData.prices,
+            borderColor: '#60a5fa',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0,
+            fill: { target: 'origin', above: 'rgba(96,165,250,0.06)' }
+          }]
+        },
+        plugins: [markerPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#181818',
+              borderColor: '#2a2a2a',
+              borderWidth: 1,
+              titleColor: '#666',
+              bodyColor: '#e5e5e5',
+              padding: 8,
+              callbacks: {
+                label: item => '$' + item.raw.toFixed(2)
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#151515' },
+              ticks: { color: '#444', maxTicksLimit: 6, maxRotation: 0 },
+              border: { color: '#1f1f1f' }
+            },
+            y: {
+              position: 'right',
+              grid: { color: '#151515' },
+              ticks: { color: '#444', callback: v => '$' + v.toFixed(0) },
+              border: { color: '#1f1f1f' }
+            }
+          }
+        }
+      });
+
+      canvas.addEventListener('click', onChartClick);
+    }
+
+    function onChartClick(e) {
+      if (!chartInstance || !chartData.prices.length) return;
+      const points = chartInstance.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+      if (!points.length) return;
+
+      const idx = points[0].index;
+      const price = chartData.prices[idx];
+      const ts = chartData.timestamps[idx];
+
+      if (!entryPoint || coverPoint) {
+        // Start fresh: set entry, clear cover
+        entryPoint = { index: idx, price, date: ts };
+        coverPoint = null;
+        $('chartHint').textContent = 'Click again to set cover point';
+        updatePointDisplay();
+        clearResults();
+      } else {
+        if (idx === entryPoint.index) return;
+        coverPoint = { index: idx, price, date: ts };
+        // Ensure entry is chronologically first
+        if (coverPoint.index < entryPoint.index) {
+          [entryPoint, coverPoint] = [coverPoint, entryPoint];
+        }
+        $('chartHint').textContent = 'Click to start over with a new entry';
+        updatePointDisplay();
+        calculateResults();
+      }
+
+      chartInstance.update('none');
+      updateURL();
+    }
+
+    function updatePointDisplay() {
+      if (entryPoint) {
+        $('entryPrice').textContent = fmt$(entryPoint.price);
+        $('entryDate').textContent = fmtPointDate(entryPoint.date);
+      } else {
+        $('entryPrice').textContent = '—';
+        $('entryDate').textContent = '—';
+      }
+
+      if (coverPoint) {
+        $('coverPrice').textContent = fmt$(coverPoint.price);
+        $('coverDate').textContent = fmtPointDate(coverPoint.date);
+      } else {
+        $('coverPrice').textContent = '—';
+        $('coverDate').textContent = '—';
+      }
+    }
+
+    function calculateResults() {
+      if (!entryPoint || !coverPoint) return;
+
+      const shares = Math.max(0, parseFloat($('sharesInput').value) || 0);
+      const borrowRate = Math.max(0, parseFloat($('borrowRateInput').value) || 0);
+      const p1 = entryPoint.price;
+      const p2 = coverPoint.price;
+      const daysHeld = Math.abs(coverPoint.date - entryPoint.date) / 86400;
+
+      const grossPL = (p1 - p2) * shares;
+      const borrowCost = shares > 0 ? p1 * shares * (borrowRate / 100) * (daysHeld / 365) : 0;
+      const netPL = grossPL - borrowCost;
+      const breakEven = shares > 0 ? p1 - borrowCost / shares : p1;
+
+      const profitClass = netPL >= 0 ? 'profit' : 'loss';
+      const grossClass = grossPL >= 0 ? 'profit' : 'loss';
+
+      $('resultsPanel').innerHTML = `
+        <div class="results">
+          <div class="result-row">
+            <span class="result-name">Days held</span>
+            <span class="result-value muted">${daysHeld < 1 ? (daysHeld * 24).toFixed(1) + 'h' : daysHeld.toFixed(1) + 'd'}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-name">Entry → Cover</span>
+            <span class="result-value muted">${fmt$(p1)} → ${fmt$(p2)}</span>
+          </div>
+          <hr class="result-divider">
+          <div class="result-row">
+            <span class="result-name">Gross P&amp;L</span>
+            <span class="result-value ${grossClass}">${fmtPL(grossPL)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-name">Borrow cost (${borrowRate}% APR)</span>
+            <span class="result-value loss">−$${borrowCost.toFixed(2)}</span>
+          </div>
+          <hr class="result-divider">
+          <div class="result-row">
+            <span class="result-name">Net P&amp;L</span>
+            <span class="result-value result-net ${profitClass}">${fmtPL(netPL)}</span>
+          </div>
+          <div class="result-row">
+            <span class="result-name">Break-even cover</span>
+            <span class="result-value muted">${fmt$(breakEven)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function clearResults() {
+      $('resultsPanel').innerHTML = '<div class="placeholder-text">Click a point to set entry<br>click again to set cover</div>';
+    }
+
+    function resetSelection() {
+      entryPoint = null;
+      coverPoint = null;
+      updatePointDisplay();
+      clearResults();
+      if (currentTicker) {
+        $('chartHint').textContent = 'Click on the chart to set short entry';
+      }
+      if (chartInstance) chartInstance.update('none');
+    }
+
+    async function fetchData(ticker, period) {
+      const { interval, range } = PERIODS[period];
+      const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${range}&includePrePost=false`;
+
+      let res;
+      try {
+        res = await fetch(yahooUrl);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } catch (e) {
+        // Fallback to CORS proxy
+        showError('Using CORS proxy — direct API request was blocked');
+        res = await fetch('https://corsproxy.io/?' + encodeURIComponent(yahooUrl));
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      }
+
+      const json = await res.json();
+      const result = json?.chart?.result?.[0];
+      if (!result) {
+        const err = json?.chart?.error;
+        throw new Error(err?.description || 'No data returned — check the ticker symbol');
+      }
+
+      const raw = result.timestamp || [];
+      const rawPrices = result.indicators?.quote?.[0]?.close || [];
+      const name = result.meta?.longName || result.meta?.shortName || '';
+
+      // Filter out null/undefined price points
+      const filtered = raw
+        .map((t, i) => ({ t, p: rawPrices[i] }))
+        .filter(d => d.p != null && isFinite(d.p));
+
+      if (!filtered.length) throw new Error('No price data available for this period');
+
+      return {
+        timestamps: filtered.map(d => d.t),
+        prices: filtered.map(d => d.p),
+        name
+      };
+    }
+
+    function showError(msg) {
+      $('errorBanner').textContent = msg;
+      $('errorBanner').style.display = 'block';
+    }
+
+    function clearError() {
+      $('errorBanner').style.display = 'none';
+    }
+
+    async function loadChart() {
+      const ticker = $('tickerInput').value.trim().toUpperCase();
+      if (!ticker) return;
+
+      clearError();
+      $('loadingOverlay').style.display = 'flex';
+      resetSelection();
+      currentTicker = ticker;
+      $('chartHint').textContent = '';
+      $('stockName').textContent = '';
+
+      try {
+        const data = await fetchData(ticker, currentPeriod);
+        chartData = data;
+        $('stockName').textContent = data.name && data.name !== ticker ? data.name : '';
+        buildChart();
+        $('chartHint').textContent = 'Click on the chart to set short entry';
+      } catch (err) {
+        showError(err.message);
+        $('chartHint').textContent = '';
+        if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+      } finally {
+        $('loadingOverlay').style.display = 'none';
+      }
+    }
+
+    // URL state — read on load, write on change
+    function updateURL() {
+      const params = new URLSearchParams();
+      if (currentTicker) params.set('ticker', currentTicker);
+      if (currentPeriod !== '1D') params.set('period', currentPeriod);
+      const shares = $('sharesInput').value;
+      if (shares && shares !== '100') params.set('shares', shares);
+      const rate = $('borrowRateInput').value;
+      if (rate && rate !== '3') params.set('rate', rate);
+      if (entryPoint) params.set('entry', entryPoint.date);
+      if (coverPoint) params.set('cover', coverPoint.date);
+      const qs = params.toString();
+      history.replaceState(null, '', qs ? '?' + qs : location.pathname);
+    }
+
+    function closestIndex(timestamps, targetTs) {
+      let bestIdx = 0, bestDiff = Infinity;
+      timestamps.forEach((ts, i) => {
+        const diff = Math.abs(ts - targetTs);
+        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+      });
+      return bestIdx;
+    }
+
+    function applyTimestamps(entryTs, coverTs) {
+      if (!chartData.timestamps.length) return;
+      const ei = closestIndex(chartData.timestamps, entryTs);
+      entryPoint = { index: ei, price: chartData.prices[ei], date: chartData.timestamps[ei] };
+      if (coverTs != null) {
+        const ci = closestIndex(chartData.timestamps, coverTs);
+        if (ci !== ei) {
+          coverPoint = { index: ci, price: chartData.prices[ci], date: chartData.timestamps[ci] };
+          if (coverPoint.index < entryPoint.index) [entryPoint, coverPoint] = [coverPoint, entryPoint];
+        }
+      }
+      updatePointDisplay();
+      if (coverPoint) {
+        calculateResults();
+        $('chartHint').textContent = 'Click to start over with a new entry';
+      } else {
+        $('chartHint').textContent = 'Click again to set cover point';
+      }
+      chartInstance.update('none');
+    }
+
+    // Events
+    $('loadBtn').addEventListener('click', () => { loadChart(); });
+    $('tickerInput').addEventListener('keydown', e => { if (e.key === 'Enter') loadChart(); });
+    $('clearBtn').addEventListener('click', () => { resetSelection(); updateURL(); });
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', async () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentPeriod = tab.dataset.period;
+        if (currentTicker) await loadChart();
+      });
+    });
+
+    $('sharesInput').addEventListener('input', () => { calculateResults(); updateURL(); });
+    $('borrowRateInput').addEventListener('input', () => { calculateResults(); updateURL(); });
+
+    // Boot: apply query params then auto-load if ticker present
+    (async () => {
+      const p = new URLSearchParams(location.search);
+      const ticker = p.get('ticker');
+      const period = p.get('period');
+      const shares = p.get('shares');
+      const rate = p.get('rate');
+      const entryTs = p.get('entry') ? parseInt(p.get('entry'), 10) : null;
+      const coverTs = p.get('cover') ? parseInt(p.get('cover'), 10) : null;
+
+      if (period && PERIODS[period]) {
+        currentPeriod = period;
+        document.querySelectorAll('.tab').forEach(t => {
+          t.classList.toggle('active', t.dataset.period === period);
+        });
+      }
+      if (shares) $('sharesInput').value = shares;
+      if (rate) $('borrowRateInput').value = rate;
+
+      if (ticker) {
+        $('tickerInput').value = ticker;
+        await loadChart();
+        if (entryTs != null) applyTimestamps(entryTs, coverTs);
+      }
+    })();
+
+    // Last-updated date from GitHub
+    fetch('https://api.github.com/repos/em0ney/tools/commits?path=short-calc.html&per_page=1')
+      .then(r => r.json())
+      .then(data => {
+        const date = data?.[0]?.commit?.committer?.date;
+        if (date) {
+          const formatted = new Date(date).toLocaleDateString('en-GB', {
+            day: 'numeric', month: 'short', year: 'numeric'
+          });
+          $('lastUpdated').textContent = `updated ${formatted}`;
+        }
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
