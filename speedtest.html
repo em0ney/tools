@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Speed Test</title>
+  <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: Helvetica, Arial, sans-serif;
+  background: #0a0a0a;
+  color: #e5e5e5;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 1.2rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #737373;
+  margin-bottom: 3rem;
+}
+
+.speed-display {
+  text-align: center;
+  margin-bottom: 3rem;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.speed-number {
+  font-size: 8rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+}
+
+.speed-unit {
+  font-size: 1rem;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-top: 0.5rem;
+}
+
+.phase-label {
+  font-size: 0.85rem;
+  color: #737373;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
+}
+
+.progress-bar {
+  width: 300px;
+  height: 2px;
+  background: #1a1a1a;
+  border-radius: 1px;
+  overflow: hidden;
+  margin-bottom: 3rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #e5e5e5;
+  width: 0%;
+  transition: width 0.3s;
+}
+
+.results {
+  display: flex;
+  gap: 3rem;
+  margin-bottom: 3rem;
+}
+
+.result-item {
+  text-align: center;
+  min-width: 100px;
+  opacity: 0.25;
+  transition: opacity 0.4s;
+}
+
+.result-item.done { opacity: 1; }
+
+.result-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #737373;
+  margin-bottom: 0.4rem;
+}
+
+.result-value {
+  font-size: 2rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-unit {
+  font-size: 0.7rem;
+  color: #737373;
+  letter-spacing: 0.08em;
+}
+
+#startBtn {
+  background: none;
+  border: 1px solid #333;
+  color: #e5e5e5;
+  padding: 0.7rem 2.5rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+#startBtn:hover { border-color: #666; color: #fff; }
+#startBtn:disabled { opacity: 0.3; cursor: default; }
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  font-size: 12px;
+  color: #737373;
+}
+
+.footer a {
+  color: #737373;
+  text-decoration: none;
+}
+
+.footer a:hover { color: #fff; }
+
+@media (max-width: 500px) {
+  .speed-number { font-size: 5rem; }
+  .results { gap: 1.5rem; }
+  .result-value { font-size: 1.5rem; }
+}
+  </style>
+</head>
+<body>
+  <h1>Speed Test</h1>
+
+  <div class="phase-label" id="phaseLabel">&nbsp;</div>
+  <div class="speed-display">
+    <div class="speed-number" id="speedNumber">&mdash;</div>
+    <div class="speed-unit" id="speedUnit">Mbps</div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="results">
+    <div class="result-item" id="pingResult">
+      <div class="result-label">Ping</div>
+      <div class="result-value" id="pingValue">&mdash;</div>
+      <div class="result-unit">ms</div>
+    </div>
+    <div class="result-item" id="downResult">
+      <div class="result-label">Download</div>
+      <div class="result-value" id="downValue">&mdash;</div>
+      <div class="result-unit">Mbps</div>
+    </div>
+    <div class="result-item" id="upResult">
+      <div class="result-label">Upload</div>
+      <div class="result-value" id="upValue">&mdash;</div>
+      <div class="result-unit">Mbps</div>
+    </div>
+  </div>
+
+  <button id="startBtn">Start</button>
+
+  <div class="footer">
+    <a href="/">← tools</a>
+    <span id="lastUpdated"></span>
+  </div>
+
+<script>
+const $ = id => document.getElementById(id);
+const speedNumber = $('speedNumber');
+const speedUnit = $('speedUnit');
+const phaseLabel = $('phaseLabel');
+const progressFill = $('progressFill');
+const startBtn = $('startBtn');
+
+let running = false;
+
+// Cloudflare speed test endpoints
+const CF_DOWN = 'https://speed.cloudflare.com/__down?bytes=';
+const CF_UP = 'https://speed.cloudflare.com/__up';
+
+function setProgress(pct) {
+  progressFill.style.width = pct + '%';
+}
+
+function setSpeed(mbps) {
+  speedNumber.textContent = mbps < 10 ? mbps.toFixed(1) : Math.round(mbps);
+}
+
+function reset() {
+  speedNumber.innerHTML = '&mdash;';
+  phaseLabel.innerHTML = '&nbsp;';
+  setProgress(0);
+  ['pingResult', 'downResult', 'upResult'].forEach(id => {
+    $(id).classList.remove('done');
+  });
+  $('pingValue').innerHTML = '&mdash;';
+  $('downValue').innerHTML = '&mdash;';
+  $('upValue').innerHTML = '&mdash;';
+}
+
+// --- Ping ---
+async function measurePing() {
+  phaseLabel.textContent = 'Measuring latency';
+  const pings = [];
+  for (let i = 0; i < 5; i++) {
+    setProgress((i / 5) * 100);
+    const t0 = performance.now();
+    await fetch(CF_DOWN + '0', { cache: 'no-store' });
+    const rtt = performance.now() - t0;
+    pings.push(rtt);
+    speedNumber.textContent = Math.round(rtt);
+    speedUnit.textContent = 'ms';
+  }
+  // Use median
+  pings.sort((a, b) => a - b);
+  const median = pings[Math.floor(pings.length / 2)];
+  const result = Math.round(median);
+  $('pingValue').textContent = result;
+  $('pingResult').classList.add('done');
+  setProgress(100);
+  return result;
+}
+
+// --- Download ---
+async function measureDownload() {
+  phaseLabel.textContent = 'Testing download';
+  speedUnit.textContent = 'Mbps';
+
+  // Progressive chunk sizes — start small, ramp up
+  const sizes = [
+    100000,    // 100 KB warmup
+    1000000,   // 1 MB
+    5000000,   // 5 MB
+    10000000,  // 10 MB
+    25000000,  // 25 MB
+  ];
+
+  let totalBytes = 0;
+  let totalTime = 0;
+  const testDuration = 8000; // 8 seconds max
+  const startTime = performance.now();
+
+  for (let i = 0; i < sizes.length; i++) {
+    if (performance.now() - startTime > testDuration) break;
+
+    const elapsed = performance.now() - startTime;
+    setProgress(Math.min((elapsed / testDuration) * 100, 95));
+
+    const t0 = performance.now();
+    const resp = await fetch(CF_DOWN + sizes[i], { cache: 'no-store' });
+    const blob = await resp.blob();
+    const dt = (performance.now() - t0) / 1000; // seconds
+
+    totalBytes += blob.size;
+    totalTime += dt;
+
+    const mbps = (totalBytes * 8) / (totalTime * 1000000);
+    setSpeed(mbps);
+  }
+
+  // If fast connection, do extra large chunks with remaining time
+  const remaining = testDuration - (performance.now() - startTime);
+  if (remaining > 1000) {
+    const chunks = Math.max(1, Math.floor(remaining / 2000));
+    for (let i = 0; i < chunks; i++) {
+      if (performance.now() - startTime > testDuration) break;
+      const elapsed = performance.now() - startTime;
+      setProgress(Math.min((elapsed / testDuration) * 100, 95));
+
+      const t0 = performance.now();
+      const resp = await fetch(CF_DOWN + '50000000', { cache: 'no-store' });
+      const blob = await resp.blob();
+      const dt = (performance.now() - t0) / 1000;
+
+      totalBytes += blob.size;
+      totalTime += dt;
+
+      const mbps = (totalBytes * 8) / (totalTime * 1000000);
+      setSpeed(mbps);
+    }
+  }
+
+  const finalMbps = (totalBytes * 8) / (totalTime * 1000000);
+  const display = finalMbps < 10 ? finalMbps.toFixed(1) : Math.round(finalMbps);
+  $('downValue').textContent = display;
+  $('downResult').classList.add('done');
+  setProgress(100);
+  return finalMbps;
+}
+
+// --- Upload ---
+async function measureUpload() {
+  phaseLabel.textContent = 'Testing upload';
+  speedUnit.textContent = 'Mbps';
+
+  const sizes = [100000, 500000, 1000000, 2000000, 5000000];
+  let totalBytes = 0;
+  let totalTime = 0;
+  const testDuration = 8000;
+  const startTime = performance.now();
+
+  for (let i = 0; i < sizes.length; i++) {
+    if (performance.now() - startTime > testDuration) break;
+
+    const elapsed = performance.now() - startTime;
+    setProgress(Math.min((elapsed / testDuration) * 100, 95));
+
+    const payload = new ArrayBuffer(sizes[i]);
+    const t0 = performance.now();
+    await fetch(CF_UP, {
+      method: 'POST',
+      body: payload,
+      cache: 'no-store',
+    });
+    const dt = (performance.now() - t0) / 1000;
+
+    totalBytes += sizes[i];
+    totalTime += dt;
+
+    const mbps = (totalBytes * 8) / (totalTime * 1000000);
+    setSpeed(mbps);
+  }
+
+  // Extra rounds if time remains
+  const remaining = testDuration - (performance.now() - startTime);
+  if (remaining > 1000) {
+    const chunks = Math.max(1, Math.floor(remaining / 2000));
+    for (let i = 0; i < chunks; i++) {
+      if (performance.now() - startTime > testDuration) break;
+      const elapsed = performance.now() - startTime;
+      setProgress(Math.min((elapsed / testDuration) * 100, 95));
+
+      const payload = new ArrayBuffer(10000000);
+      const t0 = performance.now();
+      await fetch(CF_UP, {
+        method: 'POST',
+        body: payload,
+        cache: 'no-store',
+      });
+      const dt = (performance.now() - t0) / 1000;
+
+      totalBytes += 10000000;
+      totalTime += dt;
+
+      const mbps = (totalBytes * 8) / (totalTime * 1000000);
+      setSpeed(mbps);
+    }
+  }
+
+  const finalMbps = (totalBytes * 8) / (totalTime * 1000000);
+  const display = finalMbps < 10 ? finalMbps.toFixed(1) : Math.round(finalMbps);
+  $('upValue').textContent = display;
+  $('upResult').classList.add('done');
+  setProgress(100);
+  return finalMbps;
+}
+
+async function runTest() {
+  if (running) return;
+  running = true;
+  startBtn.disabled = true;
+  startBtn.textContent = 'Running...';
+  reset();
+
+  try {
+    await measurePing();
+    await measureDownload();
+    await measureUpload();
+
+    phaseLabel.textContent = 'Done';
+    speedNumber.innerHTML = '&#10003;';
+    speedUnit.innerHTML = '&nbsp;';
+    setProgress(100);
+  } catch (e) {
+    phaseLabel.textContent = 'Error — check connection';
+    speedNumber.innerHTML = '&mdash;';
+    console.error(e);
+  }
+
+  running = false;
+  startBtn.disabled = false;
+  startBtn.textContent = 'Run again';
+}
+
+startBtn.addEventListener('click', runTest);
+
+// Auto-start
+runTest();
+
+// Footer: last updated
+fetch('https://api.github.com/repos/em0ney/tools/commits?path=speedtest.html&per_page=1')
+  .then(r => r.json())
+  .then(data => {
+    const date = data?.[0]?.commit?.committer?.date;
+    if (date) {
+      const formatted = new Date(date).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+      $('lastUpdated').textContent = `updated ${formatted}`;
+    }
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>
