@@ -18,6 +18,7 @@
   --accent: #00ff41;
   --red:    #ff4444;
   --bdr:    #1e1e1e;
+  --now:    #00aaff;
   --city-w: 186px;
   --cell-w:  42px;
   --row-h:   60px;
@@ -129,9 +130,9 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .t3 .c-hr { color: #666; }
 
 /* current UTC hour column */
-.h-cell.now { background: #091309 !important; box-shadow: inset 1px 0 0 #00cc34, inset -1px 0 0 #00cc34; }
-.h-cell.now .c-hr { color: var(--accent) !important; }
-.hdr-row .h-cell.now { color: var(--accent); box-shadow: inset 1px 0 0 #00cc34, inset -1px 0 0 #00cc34; }
+.h-cell.now { background: #090d13 !important; box-shadow: inset 1px 0 0 #0077bb, inset -1px 0 0 #0077bb; }
+.h-cell.now .c-hr { color: var(--now) !important; }
+.hdr-row .h-cell.now { color: var(--now); box-shadow: inset 1px 0 0 #0077bb, inset -1px 0 0 #0077bb; }
 
 /* selection */
 .h-cell.sel     { background: rgba(0,255,65,.06) !important; box-shadow: inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
@@ -150,8 +151,36 @@ body { display: flex; flex-direction: column; overflow: hidden; }
   letter-spacing: .04em; text-transform: uppercase; pointer-events: none;
   white-space: nowrap; overflow: hidden;
 }
-.h-cell.now  .c-day { color: rgba(0,255,65,.35); }
+.h-cell.now  .c-day { color: rgba(0,170,255,.35); }
 .h-cell.sel  .c-day { color: rgba(0,255,65,.35); }
+
+/* ── day bar ─────────────────────────────────────────── */
+#day-bar {
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--bdr); background: var(--bg2); flex-shrink: 0; overflow: hidden;
+}
+#day-picker-wrap {
+  flex-shrink: 0; padding: 5px 10px; border-right: 1px solid var(--bdr);
+}
+#day-picker {
+  background: var(--bg); border: 1px solid var(--bdr); color: var(--text);
+  font: inherit; font-size: 11px; padding: 2px 6px; outline: none; cursor: pointer;
+  color-scheme: dark;
+}
+#day-picker:focus { border-color: var(--accent); }
+#day-chips {
+  display: flex; align-items: center; gap: 3px;
+  overflow-x: auto; overflow-y: hidden; flex: 1;
+  padding: 5px 10px; scrollbar-width: none;
+}
+#day-chips::-webkit-scrollbar { display: none; }
+.day-chip {
+  flex-shrink: 0; background: none; border: 1px solid var(--faint); color: var(--dim);
+  font: inherit; font-size: 10px; padding: 2px 7px; cursor: pointer;
+  letter-spacing: .06em; white-space: nowrap; text-transform: uppercase;
+}
+.day-chip:hover { border-color: var(--accent); color: var(--accent); }
+.day-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,65,.06); }
 
 /* ── cal bar ─────────────────────────────────────────── */
 #cal-bar {
@@ -160,6 +189,19 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 }
 #cal-bar.open { display: flex; }
 #sel-info { color: var(--accent); font-size: 11px; letter-spacing: .03em; flex: 1; min-width: 200px; }
+#cal-btn {
+  border-color: var(--accent); color: var(--accent);
+  box-shadow: 0 0 8px rgba(0,255,65,.25), inset 0 0 8px rgba(0,255,65,.06);
+  animation: gcal-pulse 2s ease-in-out infinite;
+}
+#cal-btn:hover {
+  box-shadow: 0 0 16px rgba(0,255,65,.5), inset 0 0 12px rgba(0,255,65,.12);
+  animation: none;
+}
+@keyframes gcal-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(0,255,65,.2), inset 0 0 6px rgba(0,255,65,.05); }
+  50%       { box-shadow: 0 0 14px rgba(0,255,65,.45), inset 0 0 10px rgba(0,255,65,.10); }
+}
 
 /* ── footer ──────────────────────────────────────────── */
 #footer {
@@ -170,7 +212,11 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 #footer a:hover { color: var(--text); }
 
 /* ── empty state ─────────────────────────────────────── */
-#empty { display: none; padding: 32px 20px; color: var(--faint); line-height: 2; letter-spacing: .04em; }
+#empty {
+  display: none; position: absolute; inset: 0;
+  align-items: center; justify-content: center;
+  font-size: 15px; color: var(--dim); letter-spacing: .08em; text-align: center;
+}
   </style>
 </head>
 <body>
@@ -178,6 +224,13 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 <div id="topbar">
   <h1>timezones</h1>
   <button class="btn" id="add-btn">+ add</button>
+</div>
+
+<div id="day-bar">
+  <div id="day-picker-wrap">
+    <input type="date" id="day-picker">
+  </div>
+  <div id="day-chips"></div>
 </div>
 
 <div id="search-bar">
@@ -190,7 +243,7 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 
 <div id="grid-wrap">
   <div id="grid"></div>
-  <div id="empty">no timezones added — click [+ add] to get started</div>
+  <div id="empty">press <span style="color:var(--text)">+add</span>, or type <span style="color:var(--text)">+</span> to get started</div>
 </div>
 
 <div id="cal-bar">
@@ -225,12 +278,19 @@ const localDate = tz => new Intl.DateTimeFormat('en-GB', {
   timeZone: tz, weekday: 'short', day: 'numeric', month: 'short'
 }).format(new Date());
 
-// UTC base (midnight of today) — reset on day roll
-let _baseMs = todayBase();
+// UTC base — midnight of the viewed day
 function todayBase() {
   const n = new Date();
   return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
 }
+
+let selectedDayMs = todayBase();
+let _baseMs = selectedDayMs;
+
+const toDateInputVal = ms => {
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`;
+};
 
 const colDate = col => new Date(_baseMs + col * 3600000);
 
@@ -260,7 +320,7 @@ function render() {
   const grid  = document.getElementById('grid');
   const empty = document.getElementById('empty');
 
-  if (!zones.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  if (!zones.length) { grid.innerHTML = ''; empty.style.display = 'flex'; return; }
   empty.style.display = 'none';
 
   const selMin = (dragA !== null && dragB !== null) ? Math.min(dragA, dragB) : -1;
@@ -315,7 +375,7 @@ function render() {
 function hCls(tod, col, selMin, selMax, isHdr) {
   let c = 'h-cell';
   if (!isHdr && tod) c += ' ' + tod;
-  if (col === nowUTC) c += ' now';
+  if (col === nowUTC && selectedDayMs === todayBase()) c += ' now';
   if (selMin >= 0 && col >= selMin && col <= selMax) {
     c += ' sel';
     if (col === selMin) c += ' sel-s';
@@ -330,6 +390,45 @@ function scrollToNow() {
   if (!el) return;
   const cw = 186; // --city-w
   wrap.scrollLeft = el.offsetLeft - cw - (wrap.clientWidth - cw) / 2 + el.offsetWidth / 2;
+}
+
+function buildDayBar() {
+  const today = todayBase();
+  document.getElementById('day-picker').value = toDateInputVal(selectedDayMs);
+
+  const chips = document.getElementById('day-chips');
+  const html = [];
+  for (let i = 0; i < 60; i++) {
+    const ms = today + i * 86400000;
+    const isActive = ms === selectedDayMs;
+    let label;
+    if (i === 0) {
+      label = 'TODAY';
+    } else {
+      const d = new Date(ms);
+      label = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+        .replace(',', '').toUpperCase();
+    }
+    html.push(`<button class="day-chip${isActive ? ' active' : ''}" data-ms="${ms}">${label}</button>`);
+  }
+  chips.innerHTML = html.join('');
+
+  chips.querySelectorAll('.day-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDayMs = parseInt(btn.dataset.ms);
+      _baseMs = selectedDayMs;
+      dragA = null; dragB = null;
+      document.getElementById('cal-bar').classList.remove('open');
+      buildDayBar();
+      render();
+      if (selectedDayMs === todayBase()) scrollToNow();
+      else document.getElementById('grid-wrap').scrollLeft = 0;
+    });
+  });
+
+  // Scroll active chip into view
+  const activeChip = chips.querySelector('.day-chip.active');
+  if (activeChip) activeChip.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 function updateTimes() {
@@ -428,6 +527,19 @@ function runSearch(q) {
 
 // ── Events ────────────────────────────────────────────────────────────────
 document.getElementById('add-btn').addEventListener('click', () => sOpen ? closeSearch() : openSearch());
+
+document.getElementById('day-picker').addEventListener('change', e => {
+  if (!e.target.value) return;
+  const [y, m, d] = e.target.value.split('-').map(Number);
+  selectedDayMs = Date.UTC(y, m - 1, d);
+  _baseMs = selectedDayMs;
+  dragA = null; dragB = null;
+  document.getElementById('cal-bar').classList.remove('open');
+  buildDayBar();
+  render();
+  if (selectedDayMs === todayBase()) scrollToNow();
+  else document.getElementById('grid-wrap').scrollLeft = 0;
+});
 document.getElementById('s-cancel').addEventListener('click', closeSearch);
 
 document.getElementById('s-input').addEventListener('input', e => {
@@ -441,6 +553,11 @@ document.getElementById('s-input').addEventListener('keydown', e => {
     const first = document.querySelector('#s-drop .s-item[data-tz]');
     if (first) first.click();
   }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === '+' || e.key === '=') { e.preventDefault(); openSearch(); }
 });
 
 // drag (mouse)
@@ -516,9 +633,15 @@ document.getElementById('sel-clear').addEventListener('click', () => {
 // ── Tick ──────────────────────────────────────────────────────────────────
 setInterval(() => {
   const h = new Date().getUTCHours();
+  const newToday = todayBase();
   if (h !== nowUTC) {
-    _baseMs = todayBase();
-    nowUTC  = h;
+    // If user was viewing the old today, advance to new today
+    if (selectedDayMs < newToday) {
+      selectedDayMs = newToday;
+      _baseMs = selectedDayMs;
+      buildDayBar();
+    }
+    nowUTC = h;
     render();
   } else {
     updateTimes();
@@ -526,6 +649,7 @@ setInterval(() => {
 }, 30000);
 
 // ── Init ──────────────────────────────────────────────────────────────────
+buildDayBar();
 render();
 
 fetch('https://api.github.com/repos/em0ney/tools/commits?path=timezones.html&per_page=1')
