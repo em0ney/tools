@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>timezones</title>
+  <style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:     #0b0b0b;
+  --bg2:    #111;
+  --bg3:    #1a1a1a;
+  --text:   #c0c0c0;
+  --dim:    #666;
+  --faint:  #303030;
+  --ghost:  #222;
+  --accent: #00ff41;
+  --red:    #ff4444;
+  --bdr:    #1e1e1e;
+  --city-w: 186px;
+  --cell-w:  42px;
+  --row-h:   60px;
+  --hdr-h:   28px;
+}
+
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Courier New', Courier, monospace; font-size: 12px; }
+body { display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── top bar ─────────────────────────────────────────── */
+#topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
+}
+#topbar h1 { font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); font-weight: bold; margin-right: auto; }
+.btn { background: none; border: 1px solid var(--faint); color: var(--dim); font: inherit; font-size: 11px; padding: 2px 8px; cursor: pointer; letter-spacing: .04em; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+/* ── search bar ──────────────────────────────────────── */
+#search-bar {
+  display: none; align-items: flex-start; gap: 8px;
+  padding: 8px 14px; border-bottom: 1px solid var(--bdr); background: var(--bg2); flex-shrink: 0;
+}
+#search-bar.open { display: flex; }
+.s-wrap { position: relative; }
+#s-input {
+  background: var(--bg); border: 1px solid var(--bdr); color: var(--text);
+  font: inherit; font-size: 12px; padding: 4px 8px; width: 290px; outline: none;
+}
+#s-input:focus { border-color: var(--accent); }
+#s-drop {
+  position: absolute; top: calc(100% + 2px); left: 0; width: 290px;
+  max-height: 210px; overflow-y: auto; background: var(--bg2);
+  border: 1px solid var(--bdr); z-index: 100; display: none;
+}
+#s-drop.open { display: block; }
+#s-drop::-webkit-scrollbar { width: 4px; }
+#s-drop::-webkit-scrollbar-thumb { background: var(--faint); }
+.s-item { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 8px; cursor: pointer; border-bottom: 1px solid var(--bdr); gap: 6px; }
+.s-item:last-child { border-bottom: none; }
+.s-item:hover { background: var(--bg3); }
+.s-item:hover .s-city { color: var(--accent); }
+.s-city { color: var(--text); }
+.s-tz { color: var(--faint); font-size: 10px; }
+.s-item:hover .s-tz { color: var(--dim); }
+
+/* ── grid ────────────────────────────────────────────── */
+#grid-wrap { flex: 1; overflow: auto; min-height: 0; }
+#grid-wrap::-webkit-scrollbar { width: 6px; height: 6px; }
+#grid-wrap::-webkit-scrollbar-track { background: var(--bg); }
+#grid-wrap::-webkit-scrollbar-thumb { background: var(--faint); }
+#grid-wrap::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+#grid { min-width: max-content; }
+
+.g-row { display: flex; border-bottom: 1px solid var(--bdr); }
+
+/* ── city column (sticky) ────────────────────────────── */
+.city-col {
+  width: var(--city-w); min-width: var(--city-w); flex-shrink: 0;
+  position: sticky; left: 0; z-index: 5; background: var(--bg);
+  border-right: 2px solid var(--bdr); padding: 0 10px;
+  display: flex; align-items: center;
+}
+.hdr-row .city-col {
+  height: var(--hdr-h); font-size: 10px; color: var(--faint);
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.tz-row .city-col {
+  height: var(--row-h); flex-direction: column;
+  align-items: flex-start; justify-content: center; gap: 4px;
+}
+.c-row1 { display: flex; align-items: baseline; gap: 5px; }
+.c-row2 { display: flex; align-items: baseline; gap: 5px; }
+.c-name { font-size: 13px; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 118px; }
+.c-abbr { font-size: 10px; color: var(--faint); letter-spacing: .04em; }
+.c-time { font-size: 13px; color: var(--accent); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.c-date { font-size: 10px; color: var(--dim); }
+.c-rm {
+  position: absolute; right: 5px; top: 5px;
+  background: none; border: none; color: var(--faint);
+  cursor: pointer; font: inherit; font-size: 14px; line-height: 1; padding: 1px 3px;
+}
+.c-rm:hover { color: var(--red); }
+
+/* ── hour cells ──────────────────────────────────────── */
+.h-cell {
+  width: var(--cell-w); min-width: var(--cell-w); flex-shrink: 0;
+  border-right: 1px solid var(--bdr);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; cursor: crosshair; user-select: none;
+}
+.hdr-row .h-cell {
+  height: var(--hdr-h); cursor: default;
+  font-size: 10px; color: var(--faint); font-weight: bold; letter-spacing: .05em;
+}
+.tz-row .h-cell { height: var(--row-h); }
+
+/* time-of-day backgrounds */
+.t0 { background: #0b0b0b; }   /* 22-5  deep night   */
+.t1 { background: #0e100e; }   /* 6-8   dawn         */
+.t2 { background: #161a16; }   /* 9-17  business     */
+.t3 { background: #111311; }   /* 18-21 evening      */
+
+/* hour text by time-of-day */
+.t0 .c-hr { color: #282828; }
+.t1 .c-hr { color: #555; }
+.t2 .c-hr { color: #999; }
+.t3 .c-hr { color: #666; }
+
+/* current UTC hour column */
+.h-cell.now { background: #091309 !important; box-shadow: inset 1px 0 0 #00cc34, inset -1px 0 0 #00cc34; }
+.h-cell.now .c-hr { color: var(--accent) !important; }
+.hdr-row .h-cell.now { color: var(--accent); box-shadow: inset 1px 0 0 #00cc34, inset -1px 0 0 #00cc34; }
+
+/* selection */
+.h-cell.sel     { background: rgba(0,255,65,.06) !important; box-shadow: inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.sel-s   { box-shadow: inset 2px 0 0 rgba(0,255,65,.6), inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.sel-e   { box-shadow: inset -2px 0 0 rgba(0,255,65,.6), inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.sel-s.sel-e { box-shadow: inset 2px 0 0 rgba(0,255,65,.6), inset -2px 0 0 rgba(0,255,65,.6), inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.sel .c-hr { color: #88ffb0 !important; }
+.hdr-row .h-cell.sel { color: rgba(0,255,65,.6); }
+
+.c-hr { font-size: 13px; line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* date-change label (absolute, top of cell) */
+.c-day {
+  position: absolute; top: 3px; left: 0; right: 0;
+  text-align: center; font-size: 7px; color: #383838;
+  letter-spacing: .04em; text-transform: uppercase; pointer-events: none;
+  white-space: nowrap; overflow: hidden;
+}
+.h-cell.now  .c-day { color: rgba(0,255,65,.35); }
+.h-cell.sel  .c-day { color: rgba(0,255,65,.35); }
+
+/* ── cal bar ─────────────────────────────────────────── */
+#cal-bar {
+  display: none; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 7px 14px; border-top: 1px solid var(--bdr); background: var(--bg2); flex-shrink: 0;
+}
+#cal-bar.open { display: flex; }
+#sel-info { color: var(--accent); font-size: 11px; letter-spacing: .03em; flex: 1; min-width: 200px; }
+
+/* ── footer ──────────────────────────────────────────── */
+#footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 14px; border-top: 1px solid var(--bdr); font-size: 10px; color: var(--faint); flex-shrink: 0;
+}
+#footer a { color: var(--faint); text-decoration: none; }
+#footer a:hover { color: var(--text); }
+
+/* ── empty state ─────────────────────────────────────── */
+#empty { display: none; padding: 32px 20px; color: var(--faint); line-height: 2; letter-spacing: .04em; }
+  </style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>timezones</h1>
+  <button class="btn" id="add-btn">+ add</button>
+</div>
+
+<div id="search-bar">
+  <div class="s-wrap">
+    <input id="s-input" placeholder="city or timezone…" autocomplete="off" spellcheck="false">
+    <div id="s-drop"></div>
+  </div>
+  <button class="btn" id="s-cancel">cancel</button>
+</div>
+
+<div id="grid-wrap">
+  <div id="grid"></div>
+  <div id="empty">no timezones added — click [+ add] to get started</div>
+</div>
+
+<div id="cal-bar">
+  <span id="sel-info"></span>
+  <button class="btn" id="cal-btn">→ google calendar</button>
+  <button class="btn danger" id="sel-clear">✕ clear</button>
+</div>
+
+<div id="footer">
+  <a href="index.html">← tools</a>
+  <span id="last-updated"></span>
+</div>
+
+<script>
+// ── Helpers ───────────────────────────────────────────────────────────────
+const esc  = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const pad2 = n => String(n).padStart(2, '0');
+
+// ── TZ helpers ────────────────────────────────────────────────────────────
+const cityLabel = tz => tz.split('/').pop().replace(/_/g, ' ');
+
+const tzAbbr = tz => {
+  const p = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'short' }).formatToParts(new Date());
+  return (p.find(x => x.type === 'timeZoneName') || { value: '' }).value;
+};
+
+const localTime = tz => new Intl.DateTimeFormat('en-GB', {
+  timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
+}).format(new Date());
+
+const localDate = tz => new Intl.DateTimeFormat('en-GB', {
+  timeZone: tz, weekday: 'short', day: 'numeric', month: 'short'
+}).format(new Date());
+
+// UTC base (midnight of today) — reset on day roll
+let _baseMs = todayBase();
+function todayBase() {
+  const n = new Date();
+  return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+}
+
+const colDate = col => new Date(_baseMs + col * 3600000);
+
+const colLocalHour = (tz, col) => {
+  const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).formatToParts(colDate(col));
+  const h = parseInt((p.find(x => x.type === 'hour') || { value: '0' }).value);
+  return (isNaN(h) || h === 24) ? 0 : h;
+};
+
+const colDayStr = (tz, col) => new Intl.DateTimeFormat('en-GB', {
+  timeZone: tz, day: 'numeric', month: 'short'
+}).format(colDate(col));
+
+const todClass = h => (h < 6 || h >= 22) ? 't0' : (h < 9 || h >= 19) ? 't1' : h < 18 ? 't2' : 't3';
+
+// ── State ─────────────────────────────────────────────────────────────────
+const STORE_KEY = 'tz-v1';
+let zones = (() => { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (e) { return []; } })();
+const save = () => localStorage.setItem(STORE_KEY, JSON.stringify(zones));
+
+let nowUTC = new Date().getUTCHours();
+let dragA = null, dragB = null, dragging = false;
+let didInitScroll = false;
+
+// ── Render ────────────────────────────────────────────────────────────────
+function render() {
+  const grid  = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+
+  if (!zones.length) { grid.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  const selMin = (dragA !== null && dragB !== null) ? Math.min(dragA, dragB) : -1;
+  const selMax = selMin >= 0 ? Math.max(dragA, dragB) : -2;
+
+  const rows = [];
+
+  // header row
+  let hdr = '<div class="g-row hdr-row">';
+  hdr += '<div class="city-col">UTC</div>';
+  for (let c = 0; c < 24; c++) {
+    hdr += `<div class="${hCls('', c, selMin, selMax, true)}" data-col="${c}">${pad2(c)}</div>`;
+  }
+  hdr += '</div>';
+  rows.push(hdr);
+
+  // timezone rows
+  zones.forEach((z, i) => {
+    let row = `<div class="g-row tz-row" data-i="${i}">`;
+    row += `<div class="city-col">`;
+    row += `  <button class="c-rm" data-i="${i}">×</button>`;
+    row += `  <div class="c-row1"><span class="c-name">${esc(z.label)}</span><span class="c-abbr">${esc(tzAbbr(z.tz))}</span></div>`;
+    row += `  <div class="c-row2"><span class="c-time">${localTime(z.tz)}</span><span class="c-date">${localDate(z.tz)}</span></div>`;
+    row += `</div>`;
+
+    let prevDay = null;
+    for (let c = 0; c < 24; c++) {
+      const h   = colLocalHour(z.tz, c);
+      const day = colDayStr(z.tz, c);
+      row += `<div class="${hCls(todClass(h), c, selMin, selMax, false)}" data-col="${c}">`;
+      if (day !== prevDay) { row += `<span class="c-day">${esc(day)}</span>`; prevDay = day; }
+      row += `<span class="c-hr">${pad2(h)}</span>`;
+      row += `</div>`;
+    }
+    row += `</div>`;
+    rows.push(row);
+  });
+
+  grid.innerHTML = rows.join('');
+
+  grid.querySelectorAll('.c-rm').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      zones.splice(parseInt(b.dataset.i), 1);
+      save(); render();
+    });
+  });
+
+  if (!didInitScroll && zones.length) { didInitScroll = true; requestAnimationFrame(scrollToNow); }
+}
+
+function hCls(tod, col, selMin, selMax, isHdr) {
+  let c = 'h-cell';
+  if (!isHdr && tod) c += ' ' + tod;
+  if (col === nowUTC) c += ' now';
+  if (selMin >= 0 && col >= selMin && col <= selMax) {
+    c += ' sel';
+    if (col === selMin) c += ' sel-s';
+    if (col === selMax) c += ' sel-e';
+  }
+  return c;
+}
+
+function scrollToNow() {
+  const wrap = document.getElementById('grid-wrap');
+  const el   = wrap.querySelector('.hdr-row .h-cell.now');
+  if (!el) return;
+  const cw = 186; // --city-w
+  wrap.scrollLeft = el.offsetLeft - cw - (wrap.clientWidth - cw) / 2 + el.offsetWidth / 2;
+}
+
+function updateTimes() {
+  zones.forEach((z, i) => {
+    const row = document.querySelector(`.tz-row[data-i="${i}"]`);
+    if (!row) return;
+    const t = row.querySelector('.c-time');
+    const d = row.querySelector('.c-date');
+    if (t) t.textContent = localTime(z.tz);
+    if (d) d.textContent = localDate(z.tz);
+  });
+}
+
+function updateSel() {
+  const selMin = (dragA !== null && dragB !== null) ? Math.min(dragA, dragB) : -1;
+  const selMax = selMin >= 0 ? Math.max(dragA, dragB) : -2;
+  document.querySelectorAll('.h-cell[data-col]').forEach(el => {
+    const c     = parseInt(el.dataset.col);
+    const inSel = selMin >= 0 && c >= selMin && c <= selMax;
+    el.classList.toggle('sel',   inSel);
+    el.classList.toggle('sel-s', inSel && c === selMin);
+    el.classList.toggle('sel-e', inSel && c === selMax);
+  });
+}
+
+// ── Calendar bar ──────────────────────────────────────────────────────────
+function showCalBar() {
+  const bar = document.getElementById('cal-bar');
+  if (dragA === null || dragB === null) { bar.classList.remove('open'); return; }
+
+  const mn    = Math.min(dragA, dragB), mx = Math.max(dragA, dragB);
+  const start = colDate(mn);
+  const end   = new Date(colDate(mx).getTime() + 3600000);
+
+  const tz  = zones[0]?.tz || 'UTC';
+  const fmt = t => new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', hour12: false
+  }).format(t);
+
+  document.getElementById('sel-info').textContent = `${fmt(start)} → ${fmt(end)}`;
+
+  const btn = document.getElementById('cal-btn');
+  btn.dataset.start = start.toISOString();
+  btn.dataset.end   = end.toISOString();
+  bar.classList.add('open');
+}
+
+const toGCal = iso => iso.replace(/[-:.]/g, '').slice(0, 15) + 'Z';
+
+// ── Search ────────────────────────────────────────────────────────────────
+const ALL_TZ = (() => { try { return Intl.supportedValuesOf('timeZone'); } catch (e) { return []; } })();
+let sOpen = false, sTimer = null;
+
+function openSearch() {
+  sOpen = true;
+  document.getElementById('search-bar').classList.add('open');
+  const inp = document.getElementById('s-input');
+  inp.value = ''; inp.focus();
+  document.getElementById('s-drop').innerHTML = '';
+  document.getElementById('s-drop').classList.remove('open');
+}
+
+function closeSearch() {
+  sOpen = false;
+  document.getElementById('search-bar').classList.remove('open');
+}
+
+function runSearch(q) {
+  const drop = document.getElementById('s-drop');
+  if (!q.trim()) { drop.innerHTML = ''; drop.classList.remove('open'); return; }
+  const ql  = q.toLowerCase();
+  const res = ALL_TZ
+    .filter(tz => cityLabel(tz).toLowerCase().includes(ql) || tz.toLowerCase().includes(ql))
+    .slice(0, 25);
+
+  if (!res.length) {
+    drop.innerHTML = '<div class="s-item"><span class="s-city" style="color:#383838">no results</span></div>';
+  } else {
+    drop.innerHTML = res.map(tz =>
+      `<div class="s-item" data-tz="${esc(tz)}">` +
+        `<span class="s-city">${esc(cityLabel(tz))}</span>` +
+        `<span class="s-tz">${esc(tz)}</span>` +
+      `</div>`
+    ).join('');
+    drop.querySelectorAll('.s-item[data-tz]').forEach(el => {
+      el.addEventListener('click', () => {
+        const tz = el.dataset.tz;
+        if (!zones.find(z => z.tz === tz)) { zones.push({ tz, label: cityLabel(tz) }); save(); render(); }
+        closeSearch();
+      });
+    });
+  }
+  drop.classList.add('open');
+}
+
+// ── Events ────────────────────────────────────────────────────────────────
+document.getElementById('add-btn').addEventListener('click', () => sOpen ? closeSearch() : openSearch());
+document.getElementById('s-cancel').addEventListener('click', closeSearch);
+
+document.getElementById('s-input').addEventListener('input', e => {
+  clearTimeout(sTimer);
+  sTimer = setTimeout(() => runSearch(e.target.value), 80);
+});
+
+document.getElementById('s-input').addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSearch(); return; }
+  if (e.key === 'Enter') {
+    const first = document.querySelector('#s-drop .s-item[data-tz]');
+    if (first) first.click();
+  }
+});
+
+// drag (mouse)
+const gridEl = document.getElementById('grid');
+
+gridEl.addEventListener('mousedown', e => {
+  const cell = e.target.closest('.h-cell');
+  if (!cell || cell.closest('.hdr-row')) return;
+  e.preventDefault();
+  dragging = true;
+  dragA = parseInt(cell.dataset.col); dragB = dragA;
+  document.getElementById('cal-bar').classList.remove('open');
+  updateSel();
+});
+
+document.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  const cell = e.target.closest('.h-cell');
+  if (cell && !cell.closest('.hdr-row')) {
+    const c = parseInt(cell.dataset.col);
+    if (!isNaN(c) && c !== dragB) { dragB = c; updateSel(); }
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  if (!dragging) return;
+  dragging = false;
+  showCalBar();
+});
+
+// drag (touch)
+gridEl.addEventListener('touchstart', e => {
+  const cell = e.touches[0].target.closest('.h-cell');
+  if (!cell || cell.closest('.hdr-row')) return;
+  dragging = true;
+  dragA = parseInt(cell.dataset.col); dragB = dragA;
+  document.getElementById('cal-bar').classList.remove('open');
+  updateSel();
+}, { passive: true });
+
+gridEl.addEventListener('touchmove', e => {
+  if (!dragging) return;
+  const touch = e.touches[0];
+  const el    = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (!el) return;
+  const cell  = el.closest('.h-cell');
+  if (cell && !cell.closest('.hdr-row')) {
+    const c = parseInt(cell.dataset.col);
+    if (!isNaN(c) && c !== dragB) { dragB = c; updateSel(); }
+  }
+}, { passive: true });
+
+gridEl.addEventListener('touchend', () => {
+  if (!dragging) return;
+  dragging = false;
+  showCalBar();
+});
+
+// calendar actions
+document.getElementById('cal-btn').addEventListener('click', () => {
+  const btn = document.getElementById('cal-btn');
+  if (!btn.dataset.start) return;
+  const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=Meeting&dates=${toGCal(btn.dataset.start)}/${toGCal(btn.dataset.end)}`;
+  window.open(url, '_blank');
+});
+
+document.getElementById('sel-clear').addEventListener('click', () => {
+  dragA = null; dragB = null; dragging = false;
+  updateSel();
+  document.getElementById('cal-bar').classList.remove('open');
+});
+
+// ── Tick ──────────────────────────────────────────────────────────────────
+setInterval(() => {
+  const h = new Date().getUTCHours();
+  if (h !== nowUTC) {
+    _baseMs = todayBase();
+    nowUTC  = h;
+    render();
+  } else {
+    updateTimes();
+  }
+}, 30000);
+
+// ── Init ──────────────────────────────────────────────────────────────────
+render();
+
+fetch('https://api.github.com/repos/em0ney/tools/commits?path=timezones.html&per_page=1')
+  .then(r => r.json())
+  .then(d => {
+    const dt = d?.[0]?.commit?.committer?.date;
+    if (dt) document.getElementById('last-updated').textContent =
+      `updated ${new Date(dt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  }).catch(() => {});
+</script>
+</body>
+</html>
