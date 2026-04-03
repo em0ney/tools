@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iran war monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --bg-panel: #0f0f0f;
+      --border: #1f1f1f;
+      --text: #e5e5e5;
+      --muted: #666;
+      --red: #ef4444;
+      --orange: #f97316;
+      --yellow: #eab308;
+      --green: #22c55e;
+      --blue: #3b82f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Threat Banner */
+    .threat-banner {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-left: 4px solid var(--green);
+      background: rgba(34,197,94,0.15);
+      flex-shrink: 0;
+    }
+    .threat-banner.level-low { border-left-color: var(--green); background: rgba(34,197,94,0.15); }
+    .threat-banner.level-elevated { border-left-color: var(--yellow); background: rgba(234,179,8,0.15); }
+    .threat-banner.level-high { border-left-color: var(--orange); background: rgba(249,115,22,0.15); }
+    .threat-banner.level-critical { border-left-color: var(--red); background: rgba(239,68,68,0.15); }
+    .threat-banner.pulse { animation: pulse-red 1.5s ease-in-out infinite; }
+
+    @keyframes pulse-red { 0%,100% { opacity:1; } 50% { opacity:0.7; } }
+
+    .banner-status { font-weight: 600; font-size: 14px; }
+    .banner-right { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
+    .audio-toggle {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+    }
+    .audio-toggle.active { border-color: var(--red); color: var(--red); }
+
+    /* Grid Layout */
+    .grid {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 16px;
+      padding: 16px;
+      flex: 1;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .panel-header {
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    /* Alerts Panel */
+    .alerts-list {
+      max-height: 300px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .alerts-list::-webkit-scrollbar { width: 4px; }
+    .alerts-list::-webkit-scrollbar-track { background: transparent; }
+    .alerts-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .alert-item {
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 4px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-item.tel-aviv {
+      background: rgba(239,68,68,0.15);
+      border-left: 3px solid var(--red);
+    }
+    .alert-area-badge {
+      background: var(--red);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .alert-time { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .alert-empty { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+
+    /* Chart Toggle */
+    .chart-toggles {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .chart-toggle-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;
+    }
+    .chart-toggle-btn.active { border-color: var(--red); color: var(--red); }
+
+    /* GDELT Feed */
+    .gdelt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .gdelt-list::-webkit-scrollbar { width: 4px; }
+    .gdelt-list::-webkit-scrollbar-track { background: transparent; }
+    .gdelt-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .gdelt-item { font-size: 13px; line-height: 1.4; }
+    .gdelt-item a { color: var(--blue); text-decoration: none; }
+    .gdelt-item a:hover { text-decoration: underline; }
+    .gdelt-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Threat Gauge */
+    .gauge-container { text-align: center; padding: 8px 0; }
+    .gauge-bar-bg {
+      width: 100%; height: 12px; background: var(--border); border-radius: 6px;
+      overflow: hidden; margin: 8px 0;
+    }
+    .gauge-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease, background 0.5s ease; }
+    .gauge-value { font-size: 36px; font-weight: 700; }
+    .gauge-label { font-size: 12px; color: var(--muted); }
+
+    /* Polymarket */
+    .polymarket-list { display: flex; flex-direction: column; gap: 10px; }
+    .polymarket-item { font-size: 13px; line-height: 1.4; }
+    .polymarket-question { margin-bottom: 2px; }
+    .polymarket-price { color: var(--yellow); font-weight: 600; }
+    .polymarket-empty { color: var(--muted); font-size: 13px; }
+
+    /* Footer */
+    .site-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .site-footer a { color: var(--muted); text-decoration: none; }
+    .site-footer a:hover { color: var(--text); }
+
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+      .alerts-list { max-height: 200px; }
+      .gdelt-list { max-height: 200px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Threat Banner -->
+  <div class="threat-banner level-low" id="threatBanner">
+    <span class="banner-status" id="bannerStatus">MONITORING — No active alerts</span>
+    <div class="banner-right">
+      <span id="refreshCountdown">next refresh: 5s</span>
+      <button class="audio-toggle" id="audioToggle" title="Toggle audio alerts">🔇 Audio Off</button>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid">
+    <!-- Left Column -->
+    <div class="left-col">
+      <!-- Live Alerts Panel -->
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-header">OREF Live Alerts</div>
+        <div class="alerts-list" id="alertsList">
+          <div class="alert-empty">Waiting for data...</div>
+        </div>
+      </div>
+
+      <!-- Alert History Chart -->
+      <div class="panel">
+        <div class="panel-header">Alert History</div>
+        <div class="chart-toggles">
+          <button class="chart-toggle-btn active" data-range="24h">24h</button>
+          <button class="chart-toggle-btn" data-range="7d">7d</button>
+          <button class="chart-toggle-btn" data-range="30d">30d</button>
+        </div>
+        <canvas id="historyChart" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Column -->
+    <div class="right-col">
+      <!-- Threat Score -->
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-header">Threat Score</div>
+        <div class="gauge-container">
+          <div class="gauge-value" id="gaugeValue">0</div>
+          <div class="gauge-bar-bg">
+            <div class="gauge-bar-fill" id="gaugeFill" style="width: 0%; background: var(--green);"></div>
+          </div>
+          <div class="gauge-label" id="gaugeLabel">Calculating...</div>
+        </div>
+      </div>
+
+      <!-- GDELT Intel Feed -->
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-header">GDELT Intel Feed</div>
+        <div class="gdelt-list" id="gdeltList">
+          <div class="polymarket-empty">Loading news...</div>
+        </div>
+      </div>
+
+      <!-- Polymarket -->
+      <div class="panel">
+        <div class="panel-header">Prediction Markets</div>
+        <div class="polymarket-list" id="polymarketList">
+          <div class="polymarket-empty">Loading markets...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <a href="/">← tools</a>
+    <span id="lastUpdated"></span>
+  </footer>
+
+<script>
+// ── State ──
+let seenAlertIds = new Set();
+let currentAlerts = [];
+let alertHistory = [];
+let gdeltArticles = [];
+let polymarketData = [];
+let threatScore = 0;
+let chartRange = '24h';
+let historyChart = null;
+let audioEnabled = localStorage.getItem('iranMonitorAudio') === 'true';
+let intervals = [];
+let countdownValue = 5;
+let countdownInterval = null;
+
+const TEL_AVIV_AREAS = [
+  'תל אביב - מרכז העיר', 'תל אביב - דרום העיר', 'תל אביב - עבר הירקון',
+  'תל אביב - יפו', 'גוש דן', 'רמת גן', 'גבעתיים'
+];
+
+// ── DOM Refs ──
+const threatBanner = document.getElementById('threatBanner');
+const bannerStatus = document.getElementById('bannerStatus');
+const refreshCountdown = document.getElementById('refreshCountdown');
+const audioToggle = document.getElementById('audioToggle');
+const alertsList = document.getElementById('alertsList');
+const gdeltList = document.getElementById('gdeltList');
+const polymarketList = document.getElementById('polymarketList');
+const gaugeValue = document.getElementById('gaugeValue');
+const gaugeFill = document.getElementById('gaugeFill');
+const gaugeLabel = document.getElementById('gaugeLabel');
+
+// ── Audio ──
+function playAlertBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    gain.gain.value = 0.3;
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) { /* audio not available */ }
+}
+
+function updateAudioButton() {
+  audioToggle.textContent = audioEnabled ? '🔊 Audio On' : '🔇 Audio Off';
+  audioToggle.classList.toggle('active', audioEnabled);
+}
+
+audioToggle.addEventListener('click', () => {
+  audioEnabled = !audioEnabled;
+  localStorage.setItem('iranMonitorAudio', audioEnabled);
+  updateAudioButton();
+});
+updateAudioButton();
+
+// ── Fetch Helpers ──
+async function fetchWithProxy(url, headers) {
+  try {
+    const res = await fetch(url, { headers: headers || {} });
+    if (!res.ok) throw new Error('Direct fetch failed');
+    const text = await res.text();
+    return text;
+  } catch {
+    const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(url));
+    const text = await res.text();
+    return text;
+  }
+}
+
+// ── OREF Live Alerts ──
+async function fetchOREFAlerts() {
+  try {
+    const url = 'https://www.oref.org.il/WarningMessages/alert/alerts.json';
+    const text = await fetchWithProxy(url, { 'X-Requested-With': 'XMLHttpRequest' });
+    const data = text ? JSON.parse(text) : [];
+    const alerts = Array.isArray(data) ? data : (data.data ? data.data : []);
+    processAlerts(alerts);
+  } catch {
+    // Silent fail — keep existing data
+  }
+}
+
+function isTelAvivArea(areaName) {
+  return TEL_AVIV_AREAS.some(ta => areaName && areaName.includes(ta));
+}
+
+function processAlerts(alerts) {
+  let hasNewAlerts = false;
+  let hasTelAvivAlert = false;
+
+  alerts.forEach(alert => {
+    const id = alert.id || (alert.data + '_' + alert.alertDate);
+    if (!seenAlertIds.has(id)) {
+      seenAlertIds.add(id);
+      hasNewAlerts = true;
+    }
+    if (isTelAvivArea(alert.data)) {
+      hasTelAvivAlert = true;
+    }
+  });
+
+  currentAlerts = alerts;
+
+  if (hasNewAlerts && audioEnabled && alerts.length > 0) {
+    playAlertBeep();
+  }
+
+  renderAlerts();
+  updateThreatBanner(hasTelAvivAlert);
+  calculateThreatScore();
+}
+
+function renderAlerts() {
+  if (currentAlerts.length === 0) {
+    alertsList.innerHTML = '<div class="alert-empty">No active alerts</div>';
+    return;
+  }
+
+  alertsList.innerHTML = currentAlerts.map(alert => {
+    const area = alert.data || alert.title || 'Unknown';
+    const time = alert.alertDate || '';
+    const isTelAviv = isTelAvivArea(area);
+    return `<div class="alert-item${isTelAviv ? ' tel-aviv' : ''}">
+      <div>
+        <span>${area}</span>
+        ${isTelAviv ? '<span class="alert-area-badge">YOUR AREA</span>' : ''}
+      </div>
+      <span class="alert-time">${time}</span>
+    </div>`;
+  }).join('');
+}
+
+function updateThreatBanner(hasTelAvivAlert) {
+  const count = currentAlerts.length;
+  threatBanner.classList.remove('level-low', 'level-elevated', 'level-high', 'level-critical', 'pulse');
+
+  if (hasTelAvivAlert) {
+    threatBanner.classList.add('level-critical', 'pulse');
+    bannerStatus.textContent = 'CRITICAL — Active alerts in Tel Aviv area';
+  } else if (count > 10) {
+    threatBanner.classList.add('level-critical');
+    bannerStatus.textContent = 'CRITICAL — ' + count + ' active alerts';
+  } else if (count > 5) {
+    threatBanner.classList.add('level-high');
+    bannerStatus.textContent = 'HIGH — ' + count + ' active alerts';
+  } else if (count > 0) {
+    threatBanner.classList.add('level-elevated');
+    bannerStatus.textContent = 'ELEVATED — ' + count + ' active alert' + (count > 1 ? 's' : '');
+  } else {
+    threatBanner.classList.add('level-low');
+    bannerStatus.textContent = 'MONITORING — No active alerts';
+  }
+}
+
+// ── OREF Alert History ──
+async function fetchAlertHistory() {
+  try {
+    const url = 'https://www.oref.org.il/warningMessages/alert/History/AlertsHistory.json';
+    const text = await fetchWithProxy(url, { 'X-Requested-With': 'XMLHttpRequest' });
+    const data = text ? JSON.parse(text) : [];
+    alertHistory = Array.isArray(data) ? data : [];
+    renderHistoryChart();
+    calculateThreatScore();
+  } catch {
+    // Silent fail
+  }
+}
+
+// ── Chart ──
+function initChart() {
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  historyChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: [], datasets: [{ label: 'Alerts', data: [], backgroundColor: 'rgba(239,68,68,0.7)', borderColor: '#ef4444', borderWidth: 1 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#1f1f1f' }, ticks: { color: '#666', font: { size: 10 }, maxRotation: 45 } },
+        y: { grid: { color: '#1f1f1f' }, ticks: { color: '#666', font: { size: 10 }, beginAtZero: true, precision: 0 } }
+      }
+    }
+  });
+}
+
+function renderHistoryChart() {
+  if (!historyChart) return;
+  const now = new Date();
+  let buckets = {};
+  let labels = [];
+
+  if (chartRange === '24h') {
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 3600000);
+      const key = d.getHours() + ':00';
+      labels.push(key);
+      buckets[key] = 0;
+    }
+    alertHistory.forEach(a => {
+      const d = new Date(a.alertDate || a.date);
+      if (now - d < 86400000) {
+        const key = d.getHours() + ':00';
+        if (key in buckets) buckets[key]++;
+      }
+    });
+  } else {
+    const days = chartRange === '7d' ? 7 : 30;
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 86400000);
+      const key = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      labels.push(key);
+      buckets[key] = 0;
+    }
+    alertHistory.forEach(a => {
+      const d = new Date(a.alertDate || a.date);
+      const diffDays = (now - d) / 86400000;
+      if (diffDays < (chartRange === '7d' ? 7 : 30)) {
+        const key = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        if (key in buckets) buckets[key]++;
+      }
+    });
+  }
+
+  historyChart.data.labels = labels;
+  historyChart.data.datasets[0].data = labels.map(l => buckets[l] || 0);
+  historyChart.update();
+}
+
+document.querySelectorAll('.chart-toggle-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.chart-toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chartRange = btn.dataset.range;
+    renderHistoryChart();
+  });
+});
+
+// ── GDELT News ──
+async function fetchGDELT() {
+  try {
+    const url = 'https://api.gdeltproject.org/api/v2/doc/doc?query=iran+israel+attack+missile&mode=ArtList&maxrecords=20&format=json';
+    const text = await fetchWithProxy(url);
+    const data = JSON.parse(text);
+    gdeltArticles = (data && data.articles) ? data.articles : [];
+    renderGDELT();
+    calculateThreatScore();
+  } catch {
+    gdeltList.innerHTML = '<div class="polymarket-empty">Unable to load news feed</div>';
+  }
+}
+
+function renderGDELT() {
+  if (gdeltArticles.length === 0) {
+    gdeltList.innerHTML = '<div class="polymarket-empty">No articles found</div>';
+    return;
+  }
+  gdeltList.innerHTML = gdeltArticles.slice(0, 15).map(article => {
+    const title = article.title || 'Untitled';
+    const url = article.url || '#';
+    const domain = article.domain || '';
+    const date = article.seendate ? new Date(article.seendate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+    return `<div class="gdelt-item">
+      <a href="${url}" target="_blank" rel="noopener">${title}</a>
+      <div class="gdelt-meta">${domain}${date ? ' — ' + date : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Polymarket ──
+async function fetchPolymarket() {
+  try {
+    const url = 'https://gamma-api.polymarket.com/markets?tag=Iran&closed=false&limit=5';
+    const text = await fetchWithProxy(url);
+    const data = JSON.parse(text);
+    polymarketData = Array.isArray(data) ? data : [];
+    renderPolymarket();
+  } catch {
+    polymarketList.innerHTML = '<div class="polymarket-empty">Markets unavailable</div>';
+  }
+}
+
+function renderPolymarket() {
+  if (polymarketData.length === 0) {
+    polymarketList.innerHTML = '<div class="polymarket-empty">No relevant markets found</div>';
+    return;
+  }
+  polymarketList.innerHTML = polymarketData.map(market => {
+    const question = market.question || market.title || 'Unknown';
+    const price = market.outcomePrices ? JSON.parse(market.outcomePrices)[0] : (market.bestAsk || market.lastTradePrice || null);
+    const pct = price !== null ? (parseFloat(price) * 100).toFixed(0) + '%' : 'N/A';
+    return `<div class="polymarket-item">
+      <div class="polymarket-question">${question}</div>
+      <span class="polymarket-price">${pct} Yes</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Threat Score ──
+function calculateThreatScore() {
+  let score = 0;
+
+  // Active alerts: base weight
+  const alertCount = currentAlerts.length;
+  score += Math.min(alertCount * 5, 40);
+
+  // Tel Aviv alerts: extra weight
+  const telAvivAlerts = currentAlerts.filter(a => isTelAvivArea(a.data || ''));
+  score += Math.min(telAvivAlerts.length * 15, 30);
+
+  // Alert history frequency (last 6 hours)
+  const now = new Date();
+  const recentHistory = alertHistory.filter(a => {
+    const d = new Date(a.alertDate || a.date);
+    return (now - d) < 21600000;
+  });
+  score += Math.min(recentHistory.length * 0.5, 15);
+
+  // GDELT articles in last hour
+  const recentArticles = gdeltArticles.filter(a => {
+    if (!a.seendate) return false;
+    return (now - new Date(a.seendate)) < 3600000;
+  });
+  score += Math.min(recentArticles.length * 1.5, 15);
+
+  score = Math.min(Math.round(score), 100);
+  threatScore = score;
+  renderGauge();
+}
+
+function renderGauge() {
+  const score = threatScore;
+  gaugeValue.textContent = score;
+
+  let color, label;
+  if (score >= 75) { color = 'var(--red)'; label = 'Critical threat level'; }
+  else if (score >= 50) { color = 'var(--orange)'; label = 'High threat level'; }
+  else if (score >= 25) { color = 'var(--yellow)'; label = 'Elevated threat level'; }
+  else { color = 'var(--green)'; label = 'Low threat level'; }
+
+  gaugeValue.style.color = color;
+  gaugeFill.style.width = score + '%';
+  gaugeFill.style.background = color;
+  gaugeLabel.textContent = label;
+}
+
+// ── Countdown Timer ──
+function startCountdown() {
+  countdownValue = 5;
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(() => {
+    countdownValue--;
+    if (countdownValue <= 0) countdownValue = 5;
+    refreshCountdown.textContent = 'next refresh: ' + countdownValue + 's';
+  }, 1000);
+}
+
+// ── Interval Management ──
+function startAllIntervals() {
+  stopAllIntervals();
+
+  fetchOREFAlerts();
+  fetchAlertHistory();
+  fetchGDELT();
+  fetchPolymarket();
+
+  intervals.push(setInterval(fetchOREFAlerts, 5000));
+  intervals.push(setInterval(fetchAlertHistory, 300000));
+  intervals.push(setInterval(fetchGDELT, 300000));
+  intervals.push(setInterval(fetchPolymarket, 600000));
+
+  startCountdown();
+}
+
+function stopAllIntervals() {
+  intervals.forEach(id => clearInterval(id));
+  intervals = [];
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+}
+
+// ── Visibility API ──
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    stopAllIntervals();
+  } else {
+    startAllIntervals();
+  }
+});
+
+// ── Init ──
+initChart();
+startAllIntervals();
+
+// Footer: last updated date
+fetch('https://api.github.com/repos/em0ney/tools/commits?path=iran-war-monitor.html&per_page=1')
+  .then(r => r.json())
+  .then(data => {
+    const date = data?.[0]?.commit?.committer?.date;
+    if (date) {
+      const formatted = new Date(date).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+      document.getElementById('lastUpdated').textContent = 'updated ' + formatted;
+    }
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>
