@@ -480,7 +480,186 @@ function showCalBar() {
 const toGCal = iso => iso.replace(/[-:.]/g, '').slice(0, 15) + 'Z';
 
 // ── Search ────────────────────────────────────────────────────────────────
-const ALL_TZ = (() => { try { return Intl.supportedValuesOf('timeZone'); } catch (e) { return []; } })();
+const IANA_TZ = (() => { try { return Intl.supportedValuesOf('timeZone'); } catch (e) { return []; } })();
+
+// Major cities mapped to their IANA timezone (covers cities not in IANA list)
+const CITY_ALIASES = [
+  // North America
+  ['New York', 'America/New_York'], ['Los Angeles', 'America/Los_Angeles'],
+  ['Chicago', 'America/Chicago'], ['Houston', 'America/Chicago'],
+  ['Dallas', 'America/Chicago'], ['San Antonio', 'America/Chicago'],
+  ['Austin', 'America/Chicago'], ['Nashville', 'America/Chicago'],
+  ['Milwaukee', 'America/Chicago'], ['Memphis', 'America/Chicago'],
+  ['New Orleans', 'America/Chicago'], ['Minneapolis', 'America/Chicago'],
+  ['Kansas City', 'America/Chicago'], ['Oklahoma City', 'America/Chicago'],
+  ['Omaha', 'America/Chicago'], ['San Francisco', 'America/Los_Angeles'],
+  ['Seattle', 'America/Los_Angeles'], ['Portland', 'America/Los_Angeles'],
+  ['San Diego', 'America/Los_Angeles'], ['Las Vegas', 'America/Los_Angeles'],
+  ['San Jose', 'America/Los_Angeles'], ['Sacramento', 'America/Los_Angeles'],
+  ['Miami', 'America/New_York'], ['Atlanta', 'America/New_York'],
+  ['Boston', 'America/New_York'], ['Philadelphia', 'America/New_York'],
+  ['Washington DC', 'America/New_York'], ['Charlotte', 'America/New_York'],
+  ['Baltimore', 'America/New_York'], ['Orlando', 'America/New_York'],
+  ['Tampa', 'America/New_York'], ['Pittsburgh', 'America/New_York'],
+  ['Cleveland', 'America/New_York'], ['Cincinnati', 'America/New_York'],
+  ['Columbus', 'America/New_York'], ['Raleigh', 'America/New_York'],
+  ['Richmond', 'America/New_York'], ['Jacksonville', 'America/New_York'],
+  ['Detroit', 'America/Detroit'], ['St Louis', 'America/Chicago'],
+  ['Salt Lake City', 'America/Denver'], ['Denver', 'America/Denver'],
+  ['Phoenix', 'America/Phoenix'], ['Albuquerque', 'America/Denver'],
+  ['Honolulu', 'Pacific/Honolulu'], ['Anchorage', 'America/Anchorage'],
+  ['Toronto', 'America/Toronto'], ['Montreal', 'America/Toronto'],
+  ['Ottawa', 'America/Toronto'], ['Vancouver', 'America/Vancouver'],
+  ['Calgary', 'America/Edmonton'], ['Edmonton', 'America/Edmonton'],
+  ['Winnipeg', 'America/Winnipeg'], ['Halifax', 'America/Halifax'],
+  ['Mexico City', 'America/Mexico_City'], ['Guadalajara', 'America/Mexico_City'],
+  ['Monterrey', 'America/Monterrey'], ['Cancun', 'America/Cancun'],
+  ['Havana', 'America/Havana'], ['San Juan', 'America/Puerto_Rico'],
+  ['Santo Domingo', 'America/Santo_Domingo'], ['Kingston', 'America/Jamaica'],
+  ['Panama City', 'America/Panama'], ['San Jose CR', 'America/Costa_Rica'],
+  ['Guatemala City', 'America/Guatemala'],
+
+  // South America
+  ['São Paulo', 'America/Sao_Paulo'], ['Sao Paulo', 'America/Sao_Paulo'],
+  ['Rio de Janeiro', 'America/Sao_Paulo'], ['Brasilia', 'America/Sao_Paulo'],
+  ['Buenos Aires', 'America/Argentina/Buenos_Aires'],
+  ['Lima', 'America/Lima'], ['Bogota', 'America/Bogota'],
+  ['Bogotá', 'America/Bogota'], ['Santiago', 'America/Santiago'],
+  ['Caracas', 'America/Caracas'], ['Quito', 'America/Guayaquil'],
+  ['Medellín', 'America/Bogota'], ['Medellin', 'America/Bogota'],
+  ['Montevideo', 'America/Montevideo'], ['Asuncion', 'America/Asuncion'],
+  ['La Paz', 'America/La_Paz'], ['Guayaquil', 'America/Guayaquil'],
+  ['Recife', 'America/Recife'], ['Salvador', 'America/Bahia'],
+  ['Fortaleza', 'America/Fortaleza'], ['Manaus', 'America/Manaus'],
+  ['Curitiba', 'America/Sao_Paulo'], ['Belo Horizonte', 'America/Sao_Paulo'],
+  ['Porto Alegre', 'America/Sao_Paulo'],
+
+  // Europe
+  ['London', 'Europe/London'], ['Paris', 'Europe/Paris'],
+  ['Berlin', 'Europe/Berlin'], ['Madrid', 'Europe/Madrid'],
+  ['Rome', 'Europe/Rome'], ['Amsterdam', 'Europe/Amsterdam'],
+  ['Brussels', 'Europe/Brussels'], ['Vienna', 'Europe/Vienna'],
+  ['Zurich', 'Europe/Zurich'], ['Geneva', 'Europe/Zurich'],
+  ['Munich', 'Europe/Berlin'], ['Frankfurt', 'Europe/Berlin'],
+  ['Hamburg', 'Europe/Berlin'], ['Milan', 'Europe/Rome'],
+  ['Barcelona', 'Europe/Madrid'], ['Lisbon', 'Europe/Lisbon'],
+  ['Dublin', 'Europe/Dublin'], ['Edinburgh', 'Europe/London'],
+  ['Manchester', 'Europe/London'], ['Birmingham', 'Europe/London'],
+  ['Copenhagen', 'Europe/Copenhagen'], ['Stockholm', 'Europe/Stockholm'],
+  ['Oslo', 'Europe/Oslo'], ['Helsinki', 'Europe/Helsinki'],
+  ['Warsaw', 'Europe/Warsaw'], ['Prague', 'Europe/Prague'],
+  ['Budapest', 'Europe/Budapest'], ['Bucharest', 'Europe/Bucharest'],
+  ['Athens', 'Europe/Athens'], ['Istanbul', 'Europe/Istanbul'],
+  ['Moscow', 'Europe/Moscow'], ['St Petersburg', 'Europe/Moscow'],
+  ['Kiev', 'Europe/Kiev'], ['Kyiv', 'Europe/Kiev'],
+  ['Sofia', 'Europe/Sofia'], ['Belgrade', 'Europe/Belgrade'],
+  ['Zagreb', 'Europe/Zagreb'], ['Ljubljana', 'Europe/Ljubljana'],
+  ['Bratislava', 'Europe/Bratislava'], ['Tallinn', 'Europe/Tallinn'],
+  ['Riga', 'Europe/Riga'], ['Vilnius', 'Europe/Vilnius'],
+  ['Reykjavik', 'Atlantic/Reykjavik'], ['Luxembourg', 'Europe/Luxembourg'],
+  ['Monaco', 'Europe/Monaco'], ['Malta', 'Europe/Malta'],
+
+  // Middle East
+  ['Tel Aviv', 'Asia/Jerusalem'], ['Jerusalem', 'Asia/Jerusalem'],
+  ['Haifa', 'Asia/Jerusalem'], ['Dubai', 'Asia/Dubai'],
+  ['Abu Dhabi', 'Asia/Dubai'], ['Riyadh', 'Asia/Riyadh'],
+  ['Jeddah', 'Asia/Riyadh'], ['Mecca', 'Asia/Riyadh'],
+  ['Doha', 'Asia/Qatar'], ['Kuwait City', 'Asia/Kuwait'],
+  ['Muscat', 'Asia/Muscat'], ['Manama', 'Asia/Bahrain'],
+  ['Amman', 'Asia/Amman'], ['Beirut', 'Asia/Beirut'],
+  ['Damascus', 'Asia/Damascus'], ['Baghdad', 'Asia/Baghdad'],
+  ['Tehran', 'Asia/Tehran'],
+
+  // Africa
+  ['Cairo', 'Africa/Cairo'], ['Lagos', 'Africa/Lagos'],
+  ['Nairobi', 'Africa/Nairobi'], ['Johannesburg', 'Africa/Johannesburg'],
+  ['Cape Town', 'Africa/Johannesburg'], ['Durban', 'Africa/Johannesburg'],
+  ['Pretoria', 'Africa/Johannesburg'], ['Addis Ababa', 'Africa/Addis_Ababa'],
+  ['Dar es Salaam', 'Africa/Dar_es_Salaam'], ['Accra', 'Africa/Accra'],
+  ['Casablanca', 'Africa/Casablanca'], ['Algiers', 'Africa/Algiers'],
+  ['Tunis', 'Africa/Tunis'], ['Khartoum', 'Africa/Khartoum'],
+  ['Kampala', 'Africa/Kampala'], ['Kinshasa', 'Africa/Kinshasa'],
+  ['Luanda', 'Africa/Luanda'], ['Dakar', 'Africa/Dakar'],
+  ['Abuja', 'Africa/Lagos'], ['Kigali', 'Africa/Kigali'],
+  ['Maputo', 'Africa/Maputo'], ['Lusaka', 'Africa/Lusaka'],
+  ['Harare', 'Africa/Harare'], ['Abidjan', 'Africa/Abidjan'],
+
+  // South Asia
+  ['Mumbai', 'Asia/Kolkata'], ['Delhi', 'Asia/Kolkata'],
+  ['New Delhi', 'Asia/Kolkata'], ['Bangalore', 'Asia/Kolkata'],
+  ['Bengaluru', 'Asia/Kolkata'], ['Hyderabad', 'Asia/Kolkata'],
+  ['Chennai', 'Asia/Kolkata'], ['Pune', 'Asia/Kolkata'],
+  ['Ahmedabad', 'Asia/Kolkata'], ['Jaipur', 'Asia/Kolkata'],
+  ['Lucknow', 'Asia/Kolkata'], ['Chandigarh', 'Asia/Kolkata'],
+  ['Goa', 'Asia/Kolkata'], ['Kochi', 'Asia/Kolkata'],
+  ['Islamabad', 'Asia/Karachi'], ['Lahore', 'Asia/Karachi'],
+  ['Karachi', 'Asia/Karachi'], ['Dhaka', 'Asia/Dhaka'],
+  ['Colombo', 'Asia/Colombo'], ['Kathmandu', 'Asia/Kathmandu'],
+
+  // East & Southeast Asia
+  ['Tokyo', 'Asia/Tokyo'], ['Osaka', 'Asia/Tokyo'],
+  ['Kyoto', 'Asia/Tokyo'], ['Yokohama', 'Asia/Tokyo'],
+  ['Seoul', 'Asia/Seoul'], ['Busan', 'Asia/Seoul'],
+  ['Beijing', 'Asia/Shanghai'], ['Shanghai', 'Asia/Shanghai'],
+  ['Shenzhen', 'Asia/Shanghai'], ['Guangzhou', 'Asia/Shanghai'],
+  ['Chengdu', 'Asia/Shanghai'], ['Hangzhou', 'Asia/Shanghai'],
+  ['Wuhan', 'Asia/Shanghai'], ['Nanjing', 'Asia/Shanghai'],
+  ['Tianjin', 'Asia/Shanghai'], ['Chongqing', 'Asia/Shanghai'],
+  ['Xi\'an', 'Asia/Shanghai'], ['Suzhou', 'Asia/Shanghai'],
+  ['Hong Kong', 'Asia/Hong_Kong'], ['Taipei', 'Asia/Taipei'],
+  ['Macau', 'Asia/Macau'],
+  ['Singapore', 'Asia/Singapore'],
+  ['Bangkok', 'Asia/Bangkok'], ['Phuket', 'Asia/Bangkok'],
+  ['Chiang Mai', 'Asia/Bangkok'],
+  ['Kuala Lumpur', 'Asia/Kuala_Lumpur'],
+  ['Jakarta', 'Asia/Jakarta'], ['Bali', 'Asia/Makassar'],
+  ['Surabaya', 'Asia/Jakarta'],
+  ['Manila', 'Asia/Manila'], ['Cebu', 'Asia/Manila'],
+  ['Ho Chi Minh City', 'Asia/Ho_Chi_Minh'], ['Saigon', 'Asia/Ho_Chi_Minh'],
+  ['Hanoi', 'Asia/Bangkok'],
+  ['Phnom Penh', 'Asia/Phnom_Penh'], ['Yangon', 'Asia/Yangon'],
+  ['Ulaanbaatar', 'Asia/Ulaanbaatar'],
+
+  // Central Asia
+  ['Almaty', 'Asia/Almaty'], ['Tashkent', 'Asia/Tashkent'],
+  ['Bishkek', 'Asia/Bishkek'], ['Tbilisi', 'Asia/Tbilisi'],
+  ['Baku', 'Asia/Baku'], ['Yerevan', 'Asia/Yerevan'],
+
+  // Oceania
+  ['Sydney', 'Australia/Sydney'], ['Melbourne', 'Australia/Melbourne'],
+  ['Brisbane', 'Australia/Brisbane'], ['Perth', 'Australia/Perth'],
+  ['Adelaide', 'Australia/Adelaide'], ['Canberra', 'Australia/Sydney'],
+  ['Gold Coast', 'Australia/Brisbane'], ['Hobart', 'Australia/Hobart'],
+  ['Darwin', 'Australia/Darwin'],
+  ['Auckland', 'Pacific/Auckland'], ['Wellington', 'Pacific/Auckland'],
+  ['Christchurch', 'Pacific/Auckland'],
+  ['Fiji', 'Pacific/Fiji'], ['Guam', 'Pacific/Guam'],
+  ['Noumea', 'Pacific/Noumea'], ['Tahiti', 'Pacific/Tahiti'],
+];
+
+// Build unified searchable list: IANA entries + city aliases
+const ALL_TZ = (() => {
+  const entries = [];
+  const seen = new Set();
+
+  // Add all IANA timezones
+  IANA_TZ.forEach(tz => {
+    entries.push({ label: cityLabel(tz), tz, search: (cityLabel(tz) + ' ' + tz).toLowerCase() });
+    seen.add(cityLabel(tz).toLowerCase() + '|' + tz);
+  });
+
+  // Add city aliases (skip if already covered by IANA entry with same label+tz)
+  CITY_ALIASES.forEach(([name, tz]) => {
+    const key = name.toLowerCase() + '|' + tz;
+    if (!seen.has(key)) {
+      entries.push({ label: name, tz, search: (name + ' ' + tz).toLowerCase() });
+      seen.add(key);
+    }
+  });
+
+  return entries;
+})();
+
 let sOpen = false, sTimer = null;
 
 function openSearch() {
@@ -500,24 +679,35 @@ function closeSearch() {
 function runSearch(q) {
   const drop = document.getElementById('s-drop');
   if (!q.trim()) { drop.innerHTML = ''; drop.classList.remove('open'); return; }
-  const ql  = q.toLowerCase();
+  const ql = q.toLowerCase();
+
+  // Score results: starts-with on label scores higher than contains
   const res = ALL_TZ
-    .filter(tz => cityLabel(tz).toLowerCase().includes(ql) || tz.toLowerCase().includes(ql))
-    .slice(0, 25);
+    .filter(e => e.search.includes(ql))
+    .map(e => {
+      const labelL = e.label.toLowerCase();
+      const score = labelL.startsWith(ql) ? 0 : labelL.includes(ql) ? 1 : 2;
+      return { ...e, score };
+    })
+    .sort((a, b) => a.score - b.score || a.label.localeCompare(b.label))
+    .slice(0, 30);
 
   if (!res.length) {
     drop.innerHTML = '<div class="s-item"><span class="s-city" style="color:#383838">no results</span></div>';
   } else {
-    drop.innerHTML = res.map(tz =>
-      `<div class="s-item" data-tz="${esc(tz)}">` +
-        `<span class="s-city">${esc(cityLabel(tz))}</span>` +
-        `<span class="s-tz">${esc(tz)}</span>` +
+    drop.innerHTML = res.map(e =>
+      `<div class="s-item" data-tz="${esc(e.tz)}" data-label="${esc(e.label)}">` +
+        `<span class="s-city">${esc(e.label)}</span>` +
+        `<span class="s-tz">${esc(e.tz)}</span>` +
       `</div>`
     ).join('');
     drop.querySelectorAll('.s-item[data-tz]').forEach(el => {
       el.addEventListener('click', () => {
         const tz = el.dataset.tz;
-        if (!zones.find(z => z.tz === tz)) { zones.push({ tz, label: cityLabel(tz) }); save(); render(); }
+        const label = el.dataset.label;
+        if (!zones.find(z => z.tz === tz && z.label === label)) {
+          zones.push({ tz, label }); save(); render();
+        }
         closeSearch();
       });
     });
