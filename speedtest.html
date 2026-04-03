@@ -62,11 +62,17 @@ body {
 .col-live-footer a:hover { color: #fff; }
 
 .col-history {
-  width: 380px;
+  width: 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-left: none;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-left-color 0.4s;
+}
+
+.col-history.visible {
+  width: 380px;
   border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -319,9 +325,15 @@ h1 {
 @media (max-width: 700px) {
   .columns { flex-direction: column; }
   .col-history {
+    transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-top-color 0.4s;
+    width: 100%;
+    max-height: 0;
+    border-left: none;
+    border-top: none;
+  }
+  .col-history.visible {
     width: 100%;
     max-height: 40vh;
-    border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
   .speed-number { font-size: 5rem; }
@@ -385,6 +397,7 @@ const phaseLabel = $('phaseLabel');
 const progressFill = $('progressFill');
 const startBtn = $('startBtn');
 const historyList = $('historyList');
+const historyPane = document.querySelector('.col-history');
 const networkInfo = $('networkInfo');
 const clearBtn = $('clearBtn');
 
@@ -473,14 +486,21 @@ function formatSpeed(mbps) {
   return mbps < 10 ? mbps.toFixed(1) : Math.round(mbps);
 }
 
+function updatePaneVisibility() {
+  const history = loadHistory();
+  if (history.length > 0) {
+    historyPane.classList.add('visible');
+  } else {
+    historyPane.classList.remove('visible');
+  }
+}
+
 function renderHistory() {
   const history = loadHistory();
   historyList.innerHTML = '';
+  updatePaneVisibility();
 
-  if (history.length === 0) {
-    historyList.innerHTML = '<div class="history-empty">No results yet.<br>Run a speed test to start tracking.</div>';
-    return;
-  }
+  if (history.length === 0) return;
 
   history.forEach(r => {
     const item = document.createElement('div');
@@ -524,7 +544,7 @@ function renderHistory() {
 clearBtn.addEventListener('click', () => {
   if (confirm('Clear all speed test history?')) {
     localStorage.removeItem(STORAGE_KEY);
-    renderHistory();
+    renderHistory(); // also hides the pane via updatePaneVisibility
   }
 });
 
