@@ -9,6 +9,7 @@
 
 html, body {
   height: 100%;
+  overflow: hidden;
   font-family: Helvetica, Arial, sans-serif;
   background: #0a0a0a;
   color: #e5e5e5;
@@ -17,10 +18,184 @@ html, body {
 body {
   display: flex;
   flex-direction: column;
+}
+
+.columns {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.col-live {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-live-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
   padding: 2rem;
+}
+
+.col-live-footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+  color: #737373;
+}
+
+.col-live-footer a {
+  color: #737373;
+  text-decoration: none;
+}
+
+.col-live-footer a:hover { color: #fff; }
+
+.col-history {
+  width: 380px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.history-header h2 {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.clear-btn {
+  background: none;
+  border: 1px solid #333;
+  color: #737373;
+  padding: 3px 10px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.clear-btn:hover { border-color: #666; color: #fff; }
+
+.history-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.history-list::-webkit-scrollbar { width: 4px; }
+.history-list::-webkit-scrollbar-track { background: transparent; }
+.history-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+.history-item {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  animation: slideIn 0.15s ease-out;
+  cursor: default;
+}
+
+.history-item:first-child {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.history-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.history-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.history-date {
+  font-size: 11px;
+  color: #737373;
+}
+
+.history-isp {
+  font-size: 10px;
+  color: #555;
+  text-align: right;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-speeds {
+  display: flex;
+  gap: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.history-metric-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #555;
+}
+
+.history-metric-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.history-metric-unit {
+  font-size: 9px;
+  color: #555;
+}
+
+.history-meta {
+  margin-top: 5px;
+  font-size: 9px;
+  color: #444;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-empty {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #444;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 h1 {
@@ -29,13 +204,13 @@ h1 {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #737373;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .speed-display {
   text-align: center;
-  margin-bottom: 3rem;
-  min-height: 160px;
+  margin-bottom: 2rem;
+  min-height: 140px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,7 +218,7 @@ h1 {
 }
 
 .speed-number {
-  font-size: 8rem;
+  font-size: 7rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -73,7 +248,7 @@ h1 {
   background: #1a1a1a;
   border-radius: 1px;
   overflow: hidden;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .progress-fill {
@@ -86,12 +261,12 @@ h1 {
 .results {
   display: flex;
   gap: 3rem;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
 }
 
 .result-item {
   text-align: center;
-  min-width: 100px;
+  min-width: 80px;
   opacity: 0.25;
   transition: opacity 0.4s;
 }
@@ -118,6 +293,14 @@ h1 {
   letter-spacing: 0.08em;
 }
 
+.network-info {
+  font-size: 11px;
+  color: #555;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  min-height: 16px;
+}
+
 #startBtn {
   background: none;
   border: 1px solid #333;
@@ -133,27 +316,14 @@ h1 {
 #startBtn:hover { border-color: #666; color: #fff; }
 #startBtn:disabled { opacity: 0.3; cursor: default; }
 
-.footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 20px;
-  font-size: 12px;
-  color: #737373;
-}
-
-.footer a {
-  color: #737373;
-  text-decoration: none;
-}
-
-.footer a:hover { color: #fff; }
-
-@media (max-width: 500px) {
+@media (max-width: 700px) {
+  .columns { flex-direction: column; }
+  .col-history {
+    width: 100%;
+    max-height: 40vh;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
   .speed-number { font-size: 5rem; }
   .results { gap: 1.5rem; }
   .result-value { font-size: 1.5rem; }
@@ -161,38 +331,50 @@ h1 {
   </style>
 </head>
 <body>
-  <h1>Speed Test</h1>
+  <div class="columns">
+    <div class="col-live">
+      <div class="col-live-main">
+        <h1>Speed Test</h1>
+        <div class="phase-label" id="phaseLabel">&nbsp;</div>
+        <div class="speed-display">
+          <div class="speed-number" id="speedNumber">&mdash;</div>
+          <div class="speed-unit" id="speedUnit">Mbps</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 
-  <div class="phase-label" id="phaseLabel">&nbsp;</div>
-  <div class="speed-display">
-    <div class="speed-number" id="speedNumber">&mdash;</div>
-    <div class="speed-unit" id="speedUnit">Mbps</div>
-  </div>
-  <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="results">
+          <div class="result-item" id="pingResult">
+            <div class="result-label">Ping</div>
+            <div class="result-value" id="pingValue">&mdash;</div>
+            <div class="result-unit">ms</div>
+          </div>
+          <div class="result-item" id="downResult">
+            <div class="result-label">Download</div>
+            <div class="result-value" id="downValue">&mdash;</div>
+            <div class="result-unit">Mbps</div>
+          </div>
+          <div class="result-item" id="upResult">
+            <div class="result-label">Upload</div>
+            <div class="result-value" id="upValue">&mdash;</div>
+            <div class="result-unit">Mbps</div>
+          </div>
+        </div>
 
-  <div class="results">
-    <div class="result-item" id="pingResult">
-      <div class="result-label">Ping</div>
-      <div class="result-value" id="pingValue">&mdash;</div>
-      <div class="result-unit">ms</div>
+        <div class="network-info" id="networkInfo"></div>
+        <button id="startBtn">Start</button>
+      </div>
+      <div class="col-live-footer">
+        <a href="/">← tools</a>
+        <span id="lastUpdated"></span>
+      </div>
     </div>
-    <div class="result-item" id="downResult">
-      <div class="result-label">Download</div>
-      <div class="result-value" id="downValue">&mdash;</div>
-      <div class="result-unit">Mbps</div>
+    <div class="col-history">
+      <div class="history-header">
+        <h2>History</h2>
+        <button class="clear-btn" id="clearBtn">Clear</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
     </div>
-    <div class="result-item" id="upResult">
-      <div class="result-label">Upload</div>
-      <div class="result-value" id="upValue">&mdash;</div>
-      <div class="result-unit">Mbps</div>
-    </div>
-  </div>
-
-  <button id="startBtn">Start</button>
-
-  <div class="footer">
-    <a href="/">← tools</a>
-    <span id="lastUpdated"></span>
   </div>
 
 <script>
@@ -202,13 +384,151 @@ const speedUnit = $('speedUnit');
 const phaseLabel = $('phaseLabel');
 const progressFill = $('progressFill');
 const startBtn = $('startBtn');
+const historyList = $('historyList');
+const networkInfo = $('networkInfo');
+const clearBtn = $('clearBtn');
 
+const STORAGE_KEY = 'speedtest_history';
+const MAX_HISTORY = 100;
 let running = false;
 
 // Cloudflare speed test endpoints
 const CF_DOWN = 'https://speed.cloudflare.com/__down?bytes=';
 const CF_UP = 'https://speed.cloudflare.com/__up';
 
+// --- Network metadata ---
+let networkMeta = {};
+
+async function fetchNetworkMeta() {
+  networkMeta = {};
+
+  // Navigator connection API
+  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+  if (conn) {
+    if (conn.type) networkMeta.connectionType = conn.type;
+    if (conn.effectiveType) networkMeta.effectiveType = conn.effectiveType;
+    if (conn.downlink) networkMeta.estimatedDownlink = conn.downlink + ' Mbps';
+  }
+
+  // Cloudflare trace for ISP/location info
+  try {
+    const resp = await fetch('https://speed.cloudflare.com/meta');
+    const data = await resp.json();
+    if (data.asOrganization) networkMeta.isp = data.asOrganization;
+    if (data.city) networkMeta.city = data.city;
+    if (data.region) networkMeta.region = data.region;
+    if (data.country) networkMeta.country = data.country;
+    if (data.clientIp) networkMeta.ip = data.clientIp;
+    if (data.colo) networkMeta.colo = data.colo;
+  } catch {
+    // Fallback: try Cloudflare trace text endpoint
+    try {
+      const resp = await fetch('https://1.1.1.1/cdn-cgi/trace');
+      const text = await resp.text();
+      const lines = Object.fromEntries(text.trim().split('\n').map(l => l.split('=')));
+      if (lines.ip) networkMeta.ip = lines.ip;
+      if (lines.loc) networkMeta.country = lines.loc;
+      if (lines.colo) networkMeta.colo = lines.colo;
+    } catch {}
+  }
+
+  // Display summary
+  const parts = [];
+  if (networkMeta.isp) parts.push(networkMeta.isp);
+  if (networkMeta.city && networkMeta.country) parts.push(networkMeta.city + ', ' + networkMeta.country);
+  else if (networkMeta.country) parts.push(networkMeta.country);
+  if (networkMeta.connectionType && networkMeta.connectionType !== 'unknown') parts.push(networkMeta.connectionType);
+  networkInfo.textContent = parts.join(' · ');
+}
+
+// --- Storage ---
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch { return []; }
+}
+
+function saveHistory(history) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)));
+}
+
+function addResult(result) {
+  const history = loadHistory();
+  history.unshift(result);
+  saveHistory(history);
+  renderHistory();
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const day = d.getDate();
+  const month = d.toLocaleDateString('en-GB', { month: 'short' });
+  const year = d.getFullYear();
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return `${day} ${month} ${year}, ${time}`;
+}
+
+function formatSpeed(mbps) {
+  if (mbps == null) return '—';
+  return mbps < 10 ? mbps.toFixed(1) : Math.round(mbps);
+}
+
+function renderHistory() {
+  const history = loadHistory();
+  historyList.innerHTML = '';
+
+  if (history.length === 0) {
+    historyList.innerHTML = '<div class="history-empty">No results yet.<br>Run a speed test to start tracking.</div>';
+    return;
+  }
+
+  history.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+
+    let metaParts = [];
+    if (r.isp) metaParts.push(r.isp);
+    if (r.city && r.country) metaParts.push(r.city + ', ' + r.country);
+    else if (r.country) metaParts.push(r.country);
+    if (r.connectionType && r.connectionType !== 'unknown') metaParts.push(r.connectionType);
+    if (r.ip) metaParts.push(r.ip);
+
+    item.innerHTML = `
+      <div class="history-top">
+        <span class="history-date">${formatDate(r.timestamp)}</span>
+        <span class="history-isp">${r.isp || ''}</span>
+      </div>
+      <div class="history-speeds">
+        <div class="history-metric">
+          <span class="history-metric-label">Ping</span>
+          <span class="history-metric-value">${r.ping != null ? r.ping : '—'}</span>
+          <span class="history-metric-unit">ms</span>
+        </div>
+        <div class="history-metric">
+          <span class="history-metric-label">Down</span>
+          <span class="history-metric-value">${formatSpeed(r.download)}</span>
+          <span class="history-metric-unit">Mbps</span>
+        </div>
+        <div class="history-metric">
+          <span class="history-metric-label">Up</span>
+          <span class="history-metric-value">${formatSpeed(r.upload)}</span>
+          <span class="history-metric-unit">Mbps</span>
+        </div>
+      </div>
+      ${metaParts.length > 0 ? '<div class="history-meta">' + metaParts.map(p => '<span>' + p + '</span>').join('') + '</div>' : ''}
+    `;
+    historyList.appendChild(item);
+  });
+}
+
+clearBtn.addEventListener('click', () => {
+  if (confirm('Clear all speed test history?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderHistory();
+  }
+});
+
+// --- Speed test logic ---
 function setProgress(pct) {
   progressFill.style.width = pct + '%';
 }
@@ -229,7 +549,6 @@ function reset() {
   $('upValue').innerHTML = '&mdash;';
 }
 
-// --- Ping ---
 async function measurePing() {
   phaseLabel.textContent = 'Measuring latency';
   const pings = [];
@@ -242,7 +561,6 @@ async function measurePing() {
     speedNumber.textContent = Math.round(rtt);
     speedUnit.textContent = 'ms';
   }
-  // Use median
   pings.sort((a, b) => a - b);
   const median = pings[Math.floor(pings.length / 2)];
   const result = Math.round(median);
@@ -252,35 +570,25 @@ async function measurePing() {
   return result;
 }
 
-// --- Download ---
 async function measureDownload() {
   phaseLabel.textContent = 'Testing download';
   speedUnit.textContent = 'Mbps';
 
-  // Progressive chunk sizes — start small, ramp up
-  const sizes = [
-    100000,    // 100 KB warmup
-    1000000,   // 1 MB
-    5000000,   // 5 MB
-    10000000,  // 10 MB
-    25000000,  // 25 MB
-  ];
-
+  const sizes = [100000, 1000000, 5000000, 10000000, 25000000];
   let totalBytes = 0;
   let totalTime = 0;
-  const testDuration = 8000; // 8 seconds max
+  const testDuration = 8000;
   const startTime = performance.now();
 
   for (let i = 0; i < sizes.length; i++) {
     if (performance.now() - startTime > testDuration) break;
-
     const elapsed = performance.now() - startTime;
     setProgress(Math.min((elapsed / testDuration) * 100, 95));
 
     const t0 = performance.now();
     const resp = await fetch(CF_DOWN + sizes[i], { cache: 'no-store' });
     const blob = await resp.blob();
-    const dt = (performance.now() - t0) / 1000; // seconds
+    const dt = (performance.now() - t0) / 1000;
 
     totalBytes += blob.size;
     totalTime += dt;
@@ -289,7 +597,6 @@ async function measureDownload() {
     setSpeed(mbps);
   }
 
-  // If fast connection, do extra large chunks with remaining time
   const remaining = testDuration - (performance.now() - startTime);
   if (remaining > 1000) {
     const chunks = Math.max(1, Math.floor(remaining / 2000));
@@ -319,7 +626,6 @@ async function measureDownload() {
   return finalMbps;
 }
 
-// --- Upload ---
 async function measureUpload() {
   phaseLabel.textContent = 'Testing upload';
   speedUnit.textContent = 'Mbps';
@@ -332,7 +638,6 @@ async function measureUpload() {
 
   for (let i = 0; i < sizes.length; i++) {
     if (performance.now() - startTime > testDuration) break;
-
     const elapsed = performance.now() - startTime;
     setProgress(Math.min((elapsed / testDuration) * 100, 95));
 
@@ -352,7 +657,6 @@ async function measureUpload() {
     setSpeed(mbps);
   }
 
-  // Extra rounds if time remains
   const remaining = testDuration - (performance.now() - startTime);
   if (remaining > 1000) {
     const chunks = Math.max(1, Math.floor(remaining / 2000));
@@ -393,15 +697,38 @@ async function runTest() {
   startBtn.textContent = 'Running...';
   reset();
 
+  // Fetch network metadata in parallel with ping
+  const metaPromise = fetchNetworkMeta();
+
   try {
-    await measurePing();
-    await measureDownload();
-    await measureUpload();
+    const ping = await measurePing();
+    const download = await measureDownload();
+    const upload = await measureUpload();
+
+    await metaPromise;
 
     phaseLabel.textContent = 'Done';
     speedNumber.innerHTML = '&#10003;';
     speedUnit.innerHTML = '&nbsp;';
     setProgress(100);
+
+    // Store result
+    const result = {
+      timestamp: Date.now(),
+      ping,
+      download: Math.round(download * 10) / 10,
+      upload: Math.round(upload * 10) / 10,
+    };
+    if (networkMeta.isp) result.isp = networkMeta.isp;
+    if (networkMeta.city) result.city = networkMeta.city;
+    if (networkMeta.country) result.country = networkMeta.country;
+    if (networkMeta.ip) result.ip = networkMeta.ip;
+    if (networkMeta.colo) result.colo = networkMeta.colo;
+    const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+    if (conn && conn.type && conn.type !== 'unknown') result.connectionType = conn.type;
+    if (conn && conn.effectiveType) result.effectiveType = conn.effectiveType;
+
+    addResult(result);
   } catch (e) {
     phaseLabel.textContent = 'Error — check connection';
     speedNumber.innerHTML = '&mdash;';
@@ -414,6 +741,9 @@ async function runTest() {
 }
 
 startBtn.addEventListener('click', runTest);
+
+// Render existing history on load
+renderHistory();
 
 // Auto-start
 runTest();
