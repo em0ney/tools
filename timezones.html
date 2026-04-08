@@ -159,6 +159,22 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .h-cell.now  .c-day { color: rgba(0,170,255,.35); }
 .h-cell.sel  .c-day { color: rgba(0,255,65,.35); }
 
+/* DST transition markers — left edge of the cell where the clock change lands */
+.h-cell.dst-spring { box-shadow: inset 3px 0 0 #ffaa33; }
+.h-cell.dst-fall   { box-shadow: inset 3px 0 0 #33bbff; }
+/* keep selection borders visible on top of DST marker */
+.h-cell.dst-spring.sel   { box-shadow: inset 3px 0 0 #ffaa33, inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.dst-fall.sel     { box-shadow: inset 3px 0 0 #33bbff, inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.dst-spring.sel-s { box-shadow: inset 3px 0 0 #ffaa33, inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.h-cell.dst-fall.sel-s   { box-shadow: inset 3px 0 0 #33bbff, inset 0 1px 0 rgba(0,255,65,.25), inset 0 -1px 0 rgba(0,255,65,.25); }
+.c-dst {
+  position: absolute; bottom: 3px; left: 0; right: 0;
+  text-align: center; font-size: 7px; letter-spacing: .04em;
+  pointer-events: none; white-space: nowrap; font-weight: bold;
+}
+.dst-spring .c-dst { color: #ffaa33; }
+.dst-fall   .c-dst { color: #33bbff; }
+
 /* ── day bar ─────────────────────────────────────────── */
 #day-bar {
   display: flex; align-items: center;
@@ -357,6 +373,16 @@ const colDayStr = (tz, col) => new Intl.DateTimeFormat('en-GB', {
   timeZone: tz, day: 'numeric', month: 'short'
 }).format(colDate(col));
 
+// UTC offset in minutes for a given timezone at a given date.
+// Returns positive for east of UTC, negative for west. DST-aware via Intl.
+const tzOffsetMin = (tz, date) => {
+  const p = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'longOffset' }).formatToParts(date);
+  const off = (p.find(x => x.type === 'timeZoneName') || { value: 'GMT+0' }).value;
+  const m = off.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+  if (!m) return 0;
+  return (m[1] === '-' ? -1 : 1) * (parseInt(m[2]) * 60 + parseInt(m[3] || '0'));
+};
+
 const todClass = h => (h < 6 || h >= 22) ? 't0' : (h < 9 || h >= 19) ? 't1' : h < 18 ? 't2' : 't3';
 
 // ── State ─────────────────────────────────────────────────────────────────
@@ -400,11 +426,29 @@ function render() {
     row += `</div>`;
 
     let prevDay = null;
+    let prevOff = null;
     for (let c = 0; c < 24; c++) {
       const h   = colLocalHour(z.tz, c);
       const day = colDayStr(z.tz, c);
-      row += `<div class="${hCls(todClass(h), c, selMin, selMax, false)}" data-col="${c}">`;
+      const off = tzOffsetMin(z.tz, colDate(c));
+      let extraCls = '';
+      let dstBadge = '';
+      if (prevOff !== null && off !== prevOff) {
+        const diff = off - prevOff; // +60 = spring forward, -60 = fall back
+        const mag  = Math.abs(diff) / 60;
+        const magS = mag === Math.floor(mag) ? mag.toFixed(0) : mag.toFixed(1);
+        if (diff > 0) {
+          extraCls = ' dst-spring';
+          dstBadge = `<span class="c-dst">+${magS}h</span>`;
+        } else {
+          extraCls = ' dst-fall';
+          dstBadge = `<span class="c-dst">−${magS}h</span>`;
+        }
+      }
+      prevOff = off;
+      row += `<div class="${hCls(todClass(h), c, selMin, selMax, false)}${extraCls}" data-col="${c}">`;
       if (day !== prevDay) { row += `<span class="c-day">${esc(day)}</span>`; prevDay = day; }
+      if (dstBadge) row += dstBadge;
       row += `<span class="c-hr">${pad2(h)}</span>`;
       row += `</div>`;
     }
