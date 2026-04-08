@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Speed Test</title>
   <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -97,15 +97,17 @@ body {
   background: none;
   border: 1px solid #333;
   color: #737373;
-  padding: 3px 10px;
-  font-size: 10px;
+  padding: 6px 12px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
   transition: border-color 0.2s, color 0.2s;
+  min-height: 32px;
 }
 
 .clear-btn:hover { border-color: #666; color: #fff; }
+.clear-btn:active { border-color: #888; color: #fff; }
 
 .history-list {
   flex: 1;
@@ -249,7 +251,7 @@ h1 {
 }
 
 .progress-bar {
-  width: 300px;
+  width: min(300px, 85vw);
   height: 2px;
   background: #1a1a1a;
   border-radius: 1px;
@@ -311,19 +313,22 @@ h1 {
   background: none;
   border: 1px solid #333;
   color: #e5e5e5;
-  padding: 0.7rem 2.5rem;
+  padding: 0.85rem 2.5rem;
   font-size: 0.85rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
+  min-height: 44px;
   transition: border-color 0.2s, color 0.2s;
 }
 
 #startBtn:hover { border-color: #666; color: #fff; }
+#startBtn:active { border-color: #888; color: #fff; }
 #startBtn:disabled { opacity: 0.3; cursor: default; }
 
 @media (max-width: 700px) {
   .columns { flex-direction: column; }
+  .col-live-main { padding: 1.25rem 1rem; justify-content: flex-start; }
   .col-history {
     transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-top-color 0.4s;
     width: 100%;
@@ -336,9 +341,15 @@ h1 {
     max-height: 40vh;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
+  h1 { margin-bottom: 1.25rem; }
+  .speed-display { margin-bottom: 1.25rem; min-height: 110px; }
   .speed-number { font-size: 5rem; }
-  .results { gap: 1.5rem; }
+  .results { gap: 1.25rem; margin-bottom: 1.5rem; flex-wrap: wrap; justify-content: center; }
+  .result-item { min-width: 80px; }
   .result-value { font-size: 1.5rem; }
+  .network-info { margin-bottom: 1rem; }
+  #startBtn { padding: 1rem 2.5rem; font-size: 0.9rem; min-height: 48px; }
+  .col-live-footer { padding: 12px 16px; }
 }
   </style>
 </head>

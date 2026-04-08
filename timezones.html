@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>timezones</title>
   <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,9 +34,11 @@ body { display: flex; flex-direction: column; overflow: hidden; }
   padding: 8px 14px; border-bottom: 1px solid var(--bdr); flex-shrink: 0;
 }
 #topbar h1 { font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); font-weight: bold; margin-right: auto; }
-.btn { background: none; border: 1px solid var(--faint); color: var(--dim); font: inherit; font-size: 11px; padding: 2px 8px; cursor: pointer; letter-spacing: .04em; }
+.btn { background: none; border: 1px solid var(--faint); color: var(--dim); font: inherit; font-size: 11px; padding: 5px 10px; cursor: pointer; letter-spacing: .04em; min-height: 28px; }
 .btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,65,.06); }
 .btn.danger:hover { border-color: var(--red); color: var(--red); }
+.btn.danger:active { border-color: var(--red); color: var(--red); background: rgba(255,68,68,.06); }
 
 /* ── search bar ──────────────────────────────────────── */
 #search-bar {
@@ -47,7 +49,7 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .s-wrap { position: relative; }
 #s-input {
   background: var(--bg); border: 1px solid var(--bdr); color: var(--text);
-  font: inherit; font-size: 12px; padding: 4px 8px; width: 290px; outline: none;
+  font: inherit; font-size: 16px; padding: 6px 10px; width: 290px; outline: none;
 }
 #s-input:focus { border-color: var(--accent); }
 #s-drop {
@@ -58,10 +60,10 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 #s-drop.open { display: block; }
 #s-drop::-webkit-scrollbar { width: 4px; }
 #s-drop::-webkit-scrollbar-thumb { background: var(--faint); }
-.s-item { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 8px; cursor: pointer; border-bottom: 1px solid var(--bdr); gap: 6px; }
+.s-item { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--bdr); gap: 6px; }
 .s-item:last-child { border-bottom: none; }
-.s-item:hover { background: var(--bg3); }
-.s-item:hover .s-city { color: var(--accent); }
+.s-item:hover, .s-item:active { background: var(--bg3); }
+.s-item:hover .s-city, .s-item:active .s-city { color: var(--accent); }
 .s-city { color: var(--text); }
 .s-tz { color: var(--faint); font-size: 10px; }
 .s-item:hover .s-tz { color: var(--dim); }
@@ -98,11 +100,14 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 .c-time { font-size: 13px; color: var(--accent); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .c-date { font-size: 10px; color: var(--dim); }
 .c-rm {
-  position: absolute; right: 5px; top: 5px;
+  position: absolute; right: 0; top: 0;
   background: none; border: none; color: var(--faint);
-  cursor: pointer; font: inherit; font-size: 14px; line-height: 1; padding: 1px 3px;
+  cursor: pointer; font: inherit; font-size: 14px; line-height: 1;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
 }
 .c-rm:hover { color: var(--red); }
+.c-rm:active { color: var(--red); background: rgba(255,68,68,.08); }
 
 /* ── hour cells ──────────────────────────────────────── */
 .h-cell {
@@ -164,7 +169,7 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 }
 #day-picker {
   background: var(--bg); border: 1px solid var(--bdr); color: var(--text);
-  font: inherit; font-size: 11px; padding: 2px 6px; outline: none; cursor: pointer;
+  font: inherit; font-size: 16px; padding: 4px 8px; outline: none; cursor: pointer;
   color-scheme: dark;
 }
 #day-picker:focus { border-color: var(--accent); }
@@ -176,10 +181,11 @@ body { display: flex; flex-direction: column; overflow: hidden; }
 #day-chips::-webkit-scrollbar { display: none; }
 .day-chip {
   flex-shrink: 0; background: none; border: 1px solid var(--faint); color: var(--dim);
-  font: inherit; font-size: 10px; padding: 2px 7px; cursor: pointer;
-  letter-spacing: .06em; white-space: nowrap; text-transform: uppercase;
+  font: inherit; font-size: 10px; padding: 5px 9px; cursor: pointer;
+  letter-spacing: .06em; white-space: nowrap; text-transform: uppercase; min-height: 28px;
 }
 .day-chip:hover { border-color: var(--accent); color: var(--accent); }
+.day-chip:active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,65,.06); }
 .day-chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,255,65,.06); }
 
 /* ── cal bar ─────────────────────────────────────────── */
@@ -216,6 +222,53 @@ body { display: flex; flex-direction: column; overflow: hidden; }
   display: none; position: absolute; inset: 0;
   align-items: center; justify-content: center;
   font-size: 15px; color: var(--dim); letter-spacing: .08em; text-align: center;
+}
+
+/* ── mobile ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  :root {
+    --city-w: 132px;
+    --cell-w: 52px;
+    --row-h:  64px;
+    --hdr-h:  32px;
+  }
+  html, body { font-size: 14px; }
+
+  #topbar { padding: 12px 14px; gap: 12px; }
+  #topbar h1 { font-size: 14px; }
+  .btn { font-size: 13px; padding: 10px 14px; min-height: 44px; letter-spacing: .04em; }
+
+  #search-bar { flex-direction: column; align-items: stretch; padding: 12px 14px; gap: 10px; }
+  .s-wrap { width: 100%; }
+  #s-input { width: 100%; font-size: 16px; padding: 10px 12px; }
+  #s-drop { width: 100%; max-height: 50vh; }
+  .s-item { padding: 12px 14px; }
+  .s-city { font-size: 14px; }
+  .s-tz { font-size: 12px; }
+  #s-cancel { align-self: flex-end; }
+
+  #day-bar { flex-wrap: nowrap; }
+  #day-picker-wrap { padding: 8px 12px; }
+  #day-picker { font-size: 16px; padding: 8px 10px; }
+  #day-chips { padding: 8px 12px; gap: 6px; }
+  .day-chip { font-size: 12px; padding: 10px 12px; min-height: 40px; }
+
+  .hdr-row .city-col { font-size: 11px; }
+  .c-name { font-size: 15px; max-width: 88px; }
+  .c-abbr { font-size: 11px; }
+  .c-time { font-size: 15px; }
+  .c-date { font-size: 11px; }
+  .c-hr   { font-size: 15px; }
+  .hdr-row .h-cell { font-size: 12px; }
+
+  .c-rm { width: 36px; height: 36px; font-size: 18px; }
+
+  #cal-bar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 14px; }
+  #sel-info { font-size: 13px; min-width: 0; text-align: center; }
+  #cal-bar .btn { width: 100%; min-height: 48px; font-size: 14px; }
+
+  #footer { font-size: 11px; padding: 10px 14px; }
+  #empty { font-size: 14px; padding: 0 24px; }
 }
   </style>
 </head>
@@ -418,6 +471,7 @@ function buildDayBar() {
       selectedDayMs = parseInt(btn.dataset.ms);
       _baseMs = selectedDayMs;
       dragA = null; dragB = null;
+      touchPickPhase = 0;
       document.getElementById('cal-bar').classList.remove('open');
       buildDayBar();
       render();
@@ -724,6 +778,7 @@ document.getElementById('day-picker').addEventListener('change', e => {
   selectedDayMs = Date.UTC(y, m - 1, d);
   _baseMs = selectedDayMs;
   dragA = null; dragB = null;
+  touchPickPhase = 0;
   document.getElementById('cal-bar').classList.remove('open');
   buildDayBar();
   render();
@@ -750,10 +805,11 @@ document.addEventListener('keydown', e => {
   if (e.key === '+' || e.key === '=') { e.preventDefault(); openSearch(); }
 });
 
-// drag (mouse)
+// drag (mouse — desktop only; touch path handled separately below)
 const gridEl = document.getElementById('grid');
 
 gridEl.addEventListener('mousedown', e => {
+  if (isTouch) return; // touch synthesizes mouse events; ignore them
   const cell = e.target.closest('.h-cell');
   if (!cell || cell.closest('.hdr-row')) return;
   e.preventDefault();
@@ -764,7 +820,7 @@ gridEl.addEventListener('mousedown', e => {
 });
 
 document.addEventListener('mousemove', e => {
-  if (!dragging) return;
+  if (!dragging || isTouch) return;
   const cell = e.target.closest('.h-cell');
   if (cell && !cell.closest('.hdr-row')) {
     const c = parseInt(cell.dataset.col);
@@ -773,37 +829,40 @@ document.addEventListener('mousemove', e => {
 });
 
 document.addEventListener('mouseup', () => {
-  if (!dragging) return;
+  if (!dragging || isTouch) return;
   dragging = false;
   showCalBar();
 });
 
-// drag (touch)
-gridEl.addEventListener('touchstart', e => {
-  const cell = e.touches[0].target.closest('.h-cell');
+// touch: two-tap range selection (lets the user pan the grid normally)
+// First tap on an hour cell sets the start; second tap sets the end; a third tap
+// (after a completed range) starts a new selection. We detect touch on first use
+// and gate this handler so desktop drag still works.
+let isTouch = false;
+let touchPickPhase = 0; // 0 = idle, 1 = start picked, awaiting end
+
+window.addEventListener('touchstart', () => { isTouch = true; }, { once: true, passive: true });
+
+gridEl.addEventListener('click', e => {
+  if (!isTouch) return; // desktop uses mousedown drag, not click
+  const cell = e.target.closest('.h-cell');
   if (!cell || cell.closest('.hdr-row')) return;
-  dragging = true;
-  dragA = parseInt(cell.dataset.col); dragB = dragA;
-  document.getElementById('cal-bar').classList.remove('open');
-  updateSel();
-}, { passive: true });
+  const c = parseInt(cell.dataset.col);
+  if (isNaN(c)) return;
 
-gridEl.addEventListener('touchmove', e => {
-  if (!dragging) return;
-  const touch = e.touches[0];
-  const el    = document.elementFromPoint(touch.clientX, touch.clientY);
-  if (!el) return;
-  const cell  = el.closest('.h-cell');
-  if (cell && !cell.closest('.hdr-row')) {
-    const c = parseInt(cell.dataset.col);
-    if (!isNaN(c) && c !== dragB) { dragB = c; updateSel(); }
+  if (touchPickPhase === 0) {
+    // start a new selection
+    dragA = c; dragB = c;
+    touchPickPhase = 1;
+    updateSel();
+    showCalBar();
+  } else {
+    // complete the range
+    dragB = c;
+    touchPickPhase = 0;
+    updateSel();
+    showCalBar();
   }
-}, { passive: true });
-
-gridEl.addEventListener('touchend', () => {
-  if (!dragging) return;
-  dragging = false;
-  showCalBar();
 });
 
 // calendar actions
@@ -816,6 +875,7 @@ document.getElementById('cal-btn').addEventListener('click', () => {
 
 document.getElementById('sel-clear').addEventListener('click', () => {
   dragA = null; dragB = null; dragging = false;
+  touchPickPhase = 0;
   updateSel();
   document.getElementById('cal-bar').classList.remove('open');
 });
