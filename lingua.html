@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>lingua — language learning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --bg: #0a0a0a;
+  --panel: #111;
+  --panel-2: #161616;
+  --border: #232323;
+  --text: #e5e5e5;
+  --muted: #8a8a8a;
+  --dim: #5a5a5a;
+  --accent: #cfa55e;
+  --accent-dim: #6e5730;
+  --danger: #c96262;
+  --good: #6ea56b;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+body { display: flex; flex-direction: column; overflow: hidden; }
+
+button, input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+button:hover { background: var(--panel-2); border-color: #333; }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1408;
+  font-weight: 500;
+}
+button.primary:hover { background: #dbb574; }
+button.ghost { border-color: transparent; color: var(--muted); padding: 4px 8px; }
+button.ghost:hover { color: var(--text); background: var(--panel-2); }
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.icon-btn:hover { color: var(--text); background: var(--panel-2); }
+
+input, select, textarea {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent-dim); }
+
+/* Header */
+header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.brand { font-weight: 600; letter-spacing: 0.02em; }
+.brand .accent { color: var(--accent); }
+header .spacer { flex: 1; }
+header select { padding: 4px 8px; font-size: 13px; }
+
+/* Main */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.col-history { border-right: 1px solid var(--border); }
+.col-right { border-left: 1px solid var(--border); }
+
+.col-head {
+  flex-shrink: 0;
+  padding: 12px 14px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.col-head .spacer { flex: 1; }
+
+.col-body { flex: 1; min-height: 0; overflow-y: auto; }
+.col-body::-webkit-scrollbar { width: 6px; }
+.col-body::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+
+/* History */
+.history-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  position: relative;
+}
+.history-item:hover { background: var(--panel); }
+.history-item.active { background: var(--panel-2); border-left: 2px solid var(--accent); padding-left: 12px; }
+.history-item .meta {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.history-item .preview {
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+}
+.history-item .delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--dim);
+  border: none;
+  background: transparent;
+}
+.history-item:hover .delete-btn { opacity: 1; }
+.history-item .delete-btn:hover { color: var(--danger); background: var(--panel-2); }
+.empty-hint { padding: 20px 14px; color: var(--dim); font-size: 13px; line-height: 1.5; }
+
+/* Center column */
+.col-center { padding: 0; }
+.center-inner {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.center-inner::-webkit-scrollbar { width: 6px; }
+.center-inner::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+
+.source-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.source-area textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+  font-size: 15px;
+}
+.source-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.source-toolbar .lang-detected { font-size: 12px; color: var(--muted); margin-right: auto; }
+.source-toolbar .lang-detected strong { color: var(--accent); font-weight: 500; }
+
+.translation-panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+.translation-panel.visible { display: flex; }
+.translation-panel .label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.translation-panel .translation-text {
+  font-size: 15px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+.translation-panel .source-echo {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--muted);
+  white-space: pre-wrap;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.translation-panel .audio-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.error-banner {
+  background: rgba(201, 98, 98, 0.12);
+  border: 1px solid rgba(201, 98, 98, 0.35);
+  color: #e89b9b;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.loading-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Word list */
+.word-list { padding: 4px 0; }
+.word-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: start;
+}
+.word-item .term {
+  font-weight: 500;
+  font-size: 14px;
+}
+.word-item .term .lemma {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.word-item .translation { font-size: 13px; color: var(--muted); grid-column: 1; }
+.word-item .pos {
+  font-size: 10px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.save-btn {
+  grid-row: 1 / span 2;
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+}
+.save-btn:hover { color: var(--text); border-color: #333; }
+.save-btn.saved {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: rgba(207, 165, 94, 0.08);
+}
+.save-btn.saved:hover { background: rgba(207, 165, 94, 0.14); }
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+.modal-backdrop.visible { display: flex; }
+.modal {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal h2 { font-size: 18px; margin-bottom: 6px; font-weight: 600; }
+.modal .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+.modal .field { margin-bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+.modal .field label { font-size: 12px; color: var(--muted); }
+.modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+
+/* Flashcards */
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+}
+.flash-overlay.visible { display: flex; }
+.flash-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.flash-header .stats { font-size: 12px; color: var(--muted); margin-left: auto; }
+.flash-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.flash-card {
+  width: 100%;
+  max-width: 520px;
+  min-height: 280px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s;
+}
+.flash-card:hover { transform: translateY(-2px); }
+.flash-card .term { font-size: 32px; font-weight: 600; text-align: center; }
+.flash-card .lemma { font-size: 14px; color: var(--dim); text-align: center; }
+.flash-card .pos {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.flash-card .flip-hint { font-size: 12px; color: var(--dim); margin-top: 12px; }
+.flash-card .translation { font-size: 22px; color: var(--accent); text-align: center; }
+.flash-actions {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid var(--border);
+}
+.flash-actions button { padding: 10px 20px; font-size: 14px; }
+.flash-actions .incorrect { border-color: var(--danger); color: var(--danger); }
+.flash-actions .correct { border-color: var(--good); color: var(--good); }
+.flash-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 20px;
+}
+
+/* Footer */
+footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--dim);
+}
+footer a { color: var(--dim); text-decoration: none; }
+footer a:hover { color: var(--text); }
+
+/* Mobile tabs */
+.tab-bar { display: none; }
+
+@media (max-width: 860px) {
+  main { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .col-history, .col-right { display: none; border: none; }
+  .col-center { border: none; }
+  main.tab-history .col-history { display: flex; }
+  main.tab-center .col-center { display: flex; }
+  main.tab-right .col-right { display: flex; }
+  main.tab-history .col-center, main.tab-history .col-right,
+  main.tab-right .col-center, main.tab-right .col-history,
+  main.tab-center .col-history, main.tab-center .col-right { display: none; }
+  .tab-bar {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab-bar button {
+    border: none;
+    border-radius: 0;
+    padding: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    background: transparent;
+    border-bottom: 2px solid transparent;
+  }
+  .tab-bar button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  header { padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
+  header .brand { font-size: 14px; }
+  .center-inner { padding: 14px 16px; }
+  .flash-card .term { font-size: 26px; }
+  .flash-card .translation { font-size: 20px; }
+}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">lingua<span class="accent">·</span></div>
+    <div class="spacer"></div>
+    <select id="langSwitcher" style="display:none"></select>
+    <button id="flashBtn" title="Flash cards">flash cards</button>
+    <button id="exportBtn" title="Export dictionary">export</button>
+    <button id="settingsBtn" title="API settings" class="ghost">⚙</button>
+  </header>
+
+  <div class="tab-bar" id="tabBar">
+    <button data-tab="history">history</button>
+    <button data-tab="center" class="active">translate</button>
+    <button data-tab="right">words</button>
+  </div>
+
+  <main id="main" class="tab-center">
+    <aside class="col col-history">
+      <div class="col-head">
+        <span>history</span>
+        <span class="spacer"></span>
+        <button class="ghost" id="newBtn" title="New">+ new</button>
+      </div>
+      <div class="col-body" id="historyList"></div>
+    </aside>
+
+    <section class="col col-center">
+      <div class="center-inner">
+        <div class="source-area">
+          <textarea id="sourceInput" placeholder="Paste or type text in any language…" spellcheck="false"></textarea>
+          <div class="source-toolbar">
+            <span class="lang-detected" id="langDetected"></span>
+            <button id="clearBtn" class="ghost">clear</button>
+            <button id="translateBtn" class="primary">translate</button>
+          </div>
+          <div id="errorBanner" class="error-banner" style="display:none"></div>
+        </div>
+        <div class="translation-panel" id="translationPanel">
+          <div class="label">
+            <span>English translation</span>
+            <span class="spacer" style="flex:1"></span>
+            <button id="playTranslationBtn" class="ghost" title="Play English">🔊 en</button>
+          </div>
+          <div class="translation-text" id="translationText"></div>
+          <div class="audio-row">
+            <button id="playSourceBtn" class="ghost">🔊 play source</button>
+            <button id="stopAudioBtn" class="ghost" style="display:none">■ stop</button>
+          </div>
+          <div class="source-echo" id="sourceEcho"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="col col-right">
+      <div class="col-head">
+        <span>words</span>
+        <span class="spacer"></span>
+        <span id="dictCount" style="font-size:11px; text-transform:none; letter-spacing:normal;"></span>
+      </div>
+      <div class="col-body word-list" id="wordList">
+        <div class="empty-hint">Translate a passage to see its vocabulary here. Save terms to build your dictionary.</div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <a href="/">← tools</a>
+    <span id="lastUpdated"></span>
+  </footer>
+
+  <!-- Settings modal -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal">
+      <h2>API settings</h2>
+      <p class="sub">Your key is stored only in this browser's localStorage and sent directly to the provider.</p>
+      <div class="field">
+        <label>Provider</label>
+        <select id="providerSelect">
+          <option value="gemini">Google Gemini (free tier)</option>
+          <option value="claude">Anthropic Claude</option>
+          <option value="openai">OpenAI</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Model <span style="color:var(--dim)">(optional — leave blank for default)</span></label>
+        <input id="modelInput" placeholder="e.g. gemini-2.0-flash">
+      </div>
+      <div class="field">
+        <label>API key</label>
+        <input id="apiKeyInput" type="password" placeholder="paste key here">
+      </div>
+      <div class="actions">
+        <button id="settingsCancel" class="ghost">cancel</button>
+        <button id="settingsSave" class="primary">save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flashcards -->
+  <div class="flash-overlay" id="flashOverlay">
+    <div class="flash-header">
+      <button id="flashClose">← back</button>
+      <select id="flashLangSelect"></select>
+      <span class="stats" id="flashStats"></span>
+    </div>
+    <div class="flash-body" id="flashBody"></div>
+    <div class="flash-actions" id="flashActions" style="display:none">
+      <button class="incorrect" id="flashIncorrect">didn't know</button>
+      <button id="flashPlayAudio">🔊</button>
+      <button class="correct" id="flashCorrect">got it</button>
+    </div>
+  </div>
+
+<script type="module">
+// ─── storage ──────────────────────────────────────────────────────────
+const LS = {
+  api: 'lingua:api',
+  passages: 'lingua:passages',
+  dictionary: 'lingua:dictionary',
+  currentLang: 'lingua:currentLang',
+};
+
+const load = (k, fallback) => {
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+};
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+let apiCfg = load(LS.api, null);
+let passages = load(LS.passages, []);
+let dictionary = load(LS.dictionary, []);
+let currentLang = load(LS.currentLang, null); // filter (null = all)
+let currentPassageId = null;
+
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const hashText = (s) => {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return h.toString(36);
+};
+
+// ─── DOM ──────────────────────────────────────────────────────────────
+const $ = (id) => document.getElementById(id);
+const sourceInput = $('sourceInput');
+const translateBtn = $('translateBtn');
+const clearBtn = $('clearBtn');
+const newBtn = $('newBtn');
+const translationPanel = $('translationPanel');
+const translationText = $('translationText');
+const sourceEcho = $('sourceEcho');
+const langDetected = $('langDetected');
+const errorBanner = $('errorBanner');
+const historyList = $('historyList');
+const wordList = $('wordList');
+const dictCount = $('dictCount');
+const langSwitcher = $('langSwitcher');
+const playSourceBtn = $('playSourceBtn');
+const playTranslationBtn = $('playTranslationBtn');
+const stopAudioBtn = $('stopAudioBtn');
+const settingsModal = $('settingsModal');
+const flashOverlay = $('flashOverlay');
+
+// ─── providers ────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `You are a translation and vocabulary assistant for a language learner.
+
+Given input text in any language, return STRICT JSON (no markdown, no prose wrapper) with this exact shape:
+{
+  "sourceLang": "<ISO 639-1 code, e.g. 'es', 'fr', 'ja', 'zh', 'he', 'ar'>",
+  "sourceLangName": "<English name, e.g. 'Spanish'>",
+  "sourceVocalized": "<optional — see rule below>",
+  "translation": "<full natural English translation>",
+  "words": [
+    {"term": "<word/phrase as it appears (fully vocalized — see rule)>", "lemma": "<base/dictionary form, also fully vocalized>", "translation": "<concise English meaning in context>", "pos": "<noun|verb|adj|adv|phrase|idiom|other>"}
+  ]
+}
+
+Vocalization rule (important for abjad scripts):
+- If sourceLang is Hebrew ("he"): add full nikud (vowel points) to every Hebrew word in BOTH the "term" and "lemma" fields. Also fill "sourceVocalized" with the entire passage re-rendered with nikud. If the input already has nikud, keep/normalize it.
+- If sourceLang is Arabic ("ar"): do the same with full harakat/tashkeel.
+- For any other language, omit "sourceVocalized" (or return empty string) and write terms/lemmas in their standard form.
+
+Rules for "words":
+- Include content words and phrases useful for a learner: nouns, verbs, adjectives, adverbs, multi-word phrases, idioms.
+- Skip articles, simple prepositions, basic pronouns, and extremely common function words unless they are genuinely unusual.
+- Deduplicate by lemma. If the same lemma appears multiple times, include only once.
+- Keep "translation" concise (1–6 words, context-aware).
+- Order by appearance in the source.
+- If the source is already English, return "sourceLang": "en" and an empty words array.`;
+
+async function callProvider(text) {
+  if (!apiCfg || !apiCfg.key) throw new Error('No API key configured. Click ⚙ to set one.');
+  const userMsg = `${SYSTEM_PROMPT}\n\n---\n\nSource text:\n${text}`;
+
+  if (apiCfg.provider === 'gemini') {
+    const model = apiCfg.model || 'gemini-2.0-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiCfg.key)}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userMsg }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 }
+      })
+    });
+    if (!res.ok) throw new Error(`Gemini ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!raw) throw new Error('Gemini returned no content');
+    return parseJsonLenient(raw);
+  }
+
+  if (apiCfg.provider === 'claude') {
+    const model = apiCfg.model || 'claude-haiku-4-5-20251001';
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiCfg.key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    if (!res.ok) throw new Error(`Claude ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const raw = data?.content?.[0]?.text;
+    if (!raw) throw new Error('Claude returned no content');
+    return parseJsonLenient(raw);
+  }
+
+  if (apiCfg.provider === 'openai') {
+    const model = apiCfg.model || 'gpt-4o-mini';
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'Authorization': `Bearer ${apiCfg.key}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: userMsg }],
+        response_format: { type: 'json_object' },
+        temperature: 0.2
+      })
+    });
+    if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const raw = data?.choices?.[0]?.message?.content;
+    if (!raw) throw new Error('OpenAI returned no content');
+    return parseJsonLenient(raw);
+  }
+
+  throw new Error(`Unknown provider: ${apiCfg.provider}`);
+}
+
+// Dicta Nakdan — specialist Hebrew vocalizer. text/plain sidesteps CORS preflight.
+async function vocalizeWithDicta(text) {
+  const res = await fetch('https://nakdan-u1-0.loadbalancer.dicta.org.il/api', {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ task: 'nakdan', data: text, genre: 'modern' })
+  });
+  if (!res.ok) throw new Error(`Dicta ${res.status}`);
+  const tokens = await res.json();
+  const parts = [];
+  const wordMap = new Map();
+  for (const t of tokens) {
+    if (t.sep) { parts.push(t.word); continue; }
+    const best = (t.options && t.options[0] ? t.options[0] : t.word).replace(/\|/g, '');
+    parts.push(best);
+    if (!wordMap.has(t.word)) wordMap.set(t.word, best);
+  }
+  return { sourceVocalized: parts.join(''), wordMap };
+}
+
+const stripNikud = s => (s || '').replace(/[֑-ׇ]/g, '');
+
+function parseJsonLenient(raw) {
+  // Strip code fences if present, then attempt to extract the first JSON object.
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  try { return JSON.parse(cleaned); } catch {}
+  const m = cleaned.match(/\{[\s\S]*\}/);
+  if (m) return JSON.parse(m[0]);
+  throw new Error('Could not parse JSON response');
+}
+
+// ─── translate flow ───────────────────────────────────────────────────
+async function doTranslate() {
+  const text = sourceInput.value.trim();
+  if (!text) return;
+  hideError();
+
+  // Cache check: same text hash, any language
+  const h = hashText(text);
+  const cached = passages.find(p => p.hash === h);
+  if (cached) {
+    loadPassage(cached.id);
+    return;
+  }
+
+  setTranslating(true);
+  try {
+    const result = await callProvider(text);
+    if (!result || typeof result.translation !== 'string') throw new Error('Invalid response shape');
+
+    let nikudSource = null;
+    if (result.sourceLang === 'he') {
+      nikudSource = 'llm';
+      try {
+        const { sourceVocalized, wordMap } = await vocalizeWithDicta(text);
+        result.sourceVocalized = sourceVocalized;
+        nikudSource = 'dicta';
+        for (const w of (result.words || [])) {
+          const base = stripNikud(w.term);
+          if (wordMap.has(base)) w.term = wordMap.get(base);
+        }
+      } catch (e) {
+        console.warn('Dicta failed, keeping LLM nikud:', e);
+      }
+    }
+
+    const passage = {
+      id: uid(),
+      hash: h,
+      sourceText: text,
+      sourceVocalized: typeof result.sourceVocalized === 'string' && result.sourceVocalized.trim() ? result.sourceVocalized : null,
+      sourceLang: result.sourceLang || 'unknown',
+      sourceLangName: result.sourceLangName || 'Unknown',
+      nikudSource,
+      translation: result.translation,
+      words: Array.isArray(result.words) ? result.words : [],
+      createdAt: Date.now()
+    };
+    passages.unshift(passage);
+    save(LS.passages, passages);
+    renderHistory();
+    renderLangSwitcher();
+    loadPassage(passage.id);
+  } catch (err) {
+    showError(err.message || String(err));
+  } finally {
+    setTranslating(false);
+  }
+}
+
+function setTranslating(on) {
+  translateBtn.disabled = on;
+  translateBtn.innerHTML = on ? '<span class="loading-spinner"></span> translating…' : 'translate';
+}
+function showError(msg) { errorBanner.textContent = msg; errorBanner.style.display = 'block'; }
+function hideError() { errorBanner.style.display = 'none'; }
+
+// ─── passage rendering ────────────────────────────────────────────────
+function loadPassage(id) {
+  const p = passages.find(x => x.id === id);
+  if (!p) return;
+  currentPassageId = id;
+  sourceInput.value = p.sourceText;
+  translationText.textContent = p.translation;
+  sourceEcho.textContent = p.sourceVocalized || p.sourceText;
+  sourceEcho.style.direction = (p.sourceLang === 'he' || p.sourceLang === 'ar') ? 'rtl' : '';
+  sourceEcho.style.textAlign = (p.sourceLang === 'he' || p.sourceLang === 'ar') ? 'right' : '';
+  const nikudTag = p.sourceLang === 'he' && p.nikudSource === 'dicta'
+    ? ' · nikud by <strong>Dicta</strong>'
+    : (p.sourceLang === 'he' && p.nikudSource === 'llm' ? ' · nikud by LLM' : '');
+  langDetected.innerHTML = p.sourceLang === 'en'
+    ? `<strong>English</strong> — already in English`
+    : `detected: <strong>${p.sourceLangName}</strong>${p.sourceVocalized ? ' · showing vocalized' : ''}${nikudTag}`;
+  translationPanel.classList.add('visible');
+  renderWords(p);
+  renderHistory();
+  stopAudio();
+}
+
+function clearCenter() {
+  currentPassageId = null;
+  sourceInput.value = '';
+  translationText.textContent = '';
+  sourceEcho.textContent = '';
+  langDetected.textContent = '';
+  translationPanel.classList.remove('visible');
+  renderWords(null);
+  renderHistory();
+  hideError();
+  stopAudio();
+  sourceInput.focus();
+}
+
+// ─── words / dictionary ───────────────────────────────────────────────
+function dictKey(lang, lemma) { return `${lang}::${(lemma || '').toLowerCase().trim()}`; }
+function isSaved(lang, lemma) { return dictionary.some(d => dictKey(d.lang, d.lemma) === dictKey(lang, lemma)); }
+
+function saveWord(passage, w) {
+  const k = dictKey(passage.sourceLang, w.lemma || w.term);
+  if (dictionary.some(d => dictKey(d.lang, d.lemma) === k)) return;
+  dictionary.push({
+    lang: passage.sourceLang,
+    langName: passage.sourceLangName,
+    term: w.term,
+    lemma: w.lemma || w.term,
+    translation: w.translation,
+    pos: w.pos || '',
+    addedAt: Date.now(),
+    stats: { correct: 0, incorrect: 0, lastSeen: null }
+  });
+  save(LS.dictionary, dictionary);
+}
+
+function removeWord(lang, lemma) {
+  const k = dictKey(lang, lemma);
+  dictionary = dictionary.filter(d => dictKey(d.lang, d.lemma) !== k);
+  save(LS.dictionary, dictionary);
+}
+
+function renderWords(passage) {
+  wordList.innerHTML = '';
+  if (!passage || !passage.words || passage.words.length === 0) {
+    wordList.innerHTML = '<div class="empty-hint">Translate a passage to see its vocabulary here. Save terms to build your dictionary.</div>';
+    dictCount.textContent = `${dictionary.length} saved`;
+    return;
+  }
+  const isRTL = passage.sourceLang === 'he' || passage.sourceLang === 'ar';
+  passage.words.forEach(w => {
+    const saved = isSaved(passage.sourceLang, w.lemma || w.term);
+    const row = document.createElement('div');
+    row.className = 'word-item';
+    const posLabel = w.pos ? `<span class="pos">${w.pos}</span>` : '';
+    const lemmaLabel = (w.lemma && w.lemma !== w.term) ? `<span class="lemma">${escapeHtml(w.lemma)}</span>` : '';
+    const termStyle = isRTL ? ' style="direction:rtl;text-align:right;font-size:16px"' : '';
+    row.innerHTML = `
+      <div class="term"${termStyle}>${escapeHtml(w.term)} ${lemmaLabel}</div>
+      <div class="translation">${escapeHtml(w.translation || '')} ${posLabel}</div>
+      <button class="save-btn ${saved ? 'saved' : ''}" title="${saved ? 'Remove from dictionary' : 'Save to dictionary'}">${saved ? '✓ saved' : '+ save'}</button>
+    `;
+    row.querySelector('.save-btn').addEventListener('click', () => {
+      if (isSaved(passage.sourceLang, w.lemma || w.term)) {
+        removeWord(passage.sourceLang, w.lemma || w.term);
+      } else {
+        saveWord(passage, w);
+      }
+      renderWords(passage);
+    });
+    wordList.appendChild(row);
+  });
+  dictCount.textContent = `${dictionary.length} saved`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ─── history ──────────────────────────────────────────────────────────
+function renderHistory() {
+  const filtered = currentLang ? passages.filter(p => p.sourceLang === currentLang) : passages;
+  historyList.innerHTML = '';
+  if (filtered.length === 0) {
+    historyList.innerHTML = '<div class="empty-hint">No passages yet. Paste some text to get started.</div>';
+    return;
+  }
+  filtered.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (p.id === currentPassageId ? ' active' : '');
+    const when = new Date(p.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    const preview = p.sourceText.slice(0, 140);
+    item.innerHTML = `
+      <div class="meta"><span>${escapeHtml(p.sourceLangName || p.sourceLang)}</span><span>${when}</span></div>
+      <div class="preview">${escapeHtml(preview)}</div>
+      <button class="delete-btn" title="Delete">×</button>
+    `;
+    item.addEventListener('click', (e) => {
+      if (e.target.classList.contains('delete-btn')) return;
+      loadPassage(p.id);
+      setMobileTab('center');
+    });
+    item.querySelector('.delete-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      passages = passages.filter(x => x.id !== p.id);
+      save(LS.passages, passages);
+      if (currentPassageId === p.id) clearCenter();
+      renderHistory();
+      renderLangSwitcher();
+    });
+    historyList.appendChild(item);
+  });
+}
+
+// ─── language switcher ────────────────────────────────────────────────
+function getLanguages() {
+  const set = new Map();
+  passages.forEach(p => { if (p.sourceLang && p.sourceLang !== 'en') set.set(p.sourceLang, p.sourceLangName || p.sourceLang); });
+  dictionary.forEach(d => { if (d.lang && d.lang !== 'en') set.set(d.lang, d.langName || d.lang); });
+  return Array.from(set, ([code, name]) => ({ code, name }));
+}
+
+function renderLangSwitcher() {
+  const langs = getLanguages();
+  if (langs.length < 2) {
+    langSwitcher.style.display = 'none';
+    currentLang = null;
+    save(LS.currentLang, null);
+    return;
+  }
+  langSwitcher.style.display = '';
+  langSwitcher.innerHTML = '<option value="">all languages</option>' +
+    langs.map(l => `<option value="${l.code}" ${currentLang === l.code ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('');
+}
+
+langSwitcher.addEventListener('change', (e) => {
+  currentLang = e.target.value || null;
+  save(LS.currentLang, currentLang);
+  renderHistory();
+});
+
+// ─── audio (speechSynthesis) ──────────────────────────────────────────
+let currentUtterance = null;
+
+function speak(text, lang) {
+  if (!('speechSynthesis' in window)) { showError('Browser has no speech synthesis.'); return; }
+  stopAudio();
+  const utter = new SpeechSynthesisUtterance(text);
+  if (lang) utter.lang = lang;
+  const voices = speechSynthesis.getVoices();
+  const match = voices.find(v => lang && v.lang.toLowerCase().startsWith(lang.toLowerCase()));
+  if (match) utter.voice = match;
+  utter.onstart = () => { stopAudioBtn.style.display = ''; };
+  utter.onend = () => { stopAudioBtn.style.display = 'none'; currentUtterance = null; };
+  utter.onerror = () => { stopAudioBtn.style.display = 'none'; currentUtterance = null; };
+  currentUtterance = utter;
+  speechSynthesis.speak(utter);
+}
+function stopAudio() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  stopAudioBtn.style.display = 'none';
+  currentUtterance = null;
+}
+
+playSourceBtn.addEventListener('click', () => {
+  const p = passages.find(x => x.id === currentPassageId);
+  if (p) speak(p.sourceText, p.sourceLang);
+});
+playTranslationBtn.addEventListener('click', () => {
+  const p = passages.find(x => x.id === currentPassageId);
+  if (p) speak(p.translation, 'en');
+});
+stopAudioBtn.addEventListener('click', stopAudio);
+// Preload voices (Chrome needs this async trigger)
+if ('speechSynthesis' in window) speechSynthesis.getVoices();
+
+// ─── settings modal ───────────────────────────────────────────────────
+$('settingsBtn').addEventListener('click', openSettings);
+$('settingsCancel').addEventListener('click', () => settingsModal.classList.remove('visible'));
+$('settingsSave').addEventListener('click', () => {
+  const provider = $('providerSelect').value;
+  const key = $('apiKeyInput').value.trim();
+  const model = $('modelInput').value.trim();
+  if (!key) { alert('Please enter an API key.'); return; }
+  apiCfg = { provider, key, model: model || null };
+  save(LS.api, apiCfg);
+  settingsModal.classList.remove('visible');
+  hideError();
+});
+
+function openSettings() {
+  $('providerSelect').value = apiCfg?.provider || 'gemini';
+  $('apiKeyInput').value = apiCfg?.key || '';
+  $('modelInput').value = apiCfg?.model || '';
+  settingsModal.classList.add('visible');
+  setTimeout(() => $('apiKeyInput').focus(), 50);
+}
+
+// ─── export ───────────────────────────────────────────────────────────
+$('exportBtn').addEventListener('click', () => {
+  if (dictionary.length === 0) { alert('Dictionary is empty.'); return; }
+  const scope = currentLang ? dictionary.filter(d => d.lang === currentLang) : dictionary;
+  const blob = new Blob([JSON.stringify(scope, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const suffix = currentLang ? `-${currentLang}` : '';
+  a.download = `lingua-dictionary${suffix}-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+// ─── flashcards ───────────────────────────────────────────────────────
+let flashState = null;
+
+$('flashBtn').addEventListener('click', openFlashcards);
+$('flashClose').addEventListener('click', closeFlashcards);
+
+function openFlashcards() {
+  const langs = getLanguages();
+  const flashLangSelect = $('flashLangSelect');
+  if (langs.length === 0) {
+    flashLangSelect.innerHTML = '<option>no words yet</option>';
+    flashLangSelect.disabled = true;
+  } else {
+    flashLangSelect.disabled = false;
+    flashLangSelect.innerHTML = langs.map(l => `<option value="${l.code}">${escapeHtml(l.name)}</option>`).join('');
+    if (currentLang) flashLangSelect.value = currentLang;
+  }
+  flashLangSelect.onchange = () => startFlashSession(flashLangSelect.value);
+  flashOverlay.classList.add('visible');
+  if (langs.length > 0) startFlashSession(flashLangSelect.value);
+  else { $('flashBody').innerHTML = '<div class="flash-empty">Save some words first, then come back.</div>'; $('flashActions').style.display = 'none'; }
+}
+
+function closeFlashcards() {
+  flashOverlay.classList.remove('visible');
+  stopAudio();
+  flashState = null;
+  // Re-render words in case stats were updated
+  const p = passages.find(x => x.id === currentPassageId);
+  if (p) renderWords(p);
+}
+
+function startFlashSession(lang) {
+  const pool = dictionary.filter(d => d.lang === lang);
+  if (pool.length === 0) {
+    $('flashBody').innerHTML = '<div class="flash-empty">No saved words for this language.</div>';
+    $('flashActions').style.display = 'none';
+    return;
+  }
+  // Sort: never-seen first, then by lowest correct-rate, stable random within tier
+  const scored = pool.map(w => {
+    const total = w.stats.correct + w.stats.incorrect;
+    const rate = total === 0 ? -1 : w.stats.correct / total;
+    return { w, rate, seen: total };
+  });
+  scored.sort((a, b) => a.rate - b.rate || a.seen - b.seen || Math.random() - 0.5);
+  flashState = {
+    lang,
+    queue: scored.map(s => s.w),
+    index: 0,
+    flipped: false,
+    sessionStart: Date.now(),
+    sessionCorrect: 0,
+    sessionIncorrect: 0
+  };
+  $('flashActions').style.display = '';
+  showFlashCard();
+}
+
+function showFlashCard() {
+  if (!flashState) return;
+  const body = $('flashBody');
+  const actions = $('flashActions');
+  if (flashState.index >= flashState.queue.length) {
+    body.innerHTML = `<div class="flash-empty">Done! ${flashState.sessionCorrect} correct / ${flashState.sessionIncorrect} missed<br><br><button id="flashRestart">restart</button></div>`;
+    actions.style.display = 'none';
+    $('flashRestart').addEventListener('click', () => startFlashSession(flashState.lang));
+    updateFlashStats();
+    return;
+  }
+  const card = flashState.queue[flashState.index];
+  const isRTL = card.lang === 'he' || card.lang === 'ar';
+  const dirAttr = isRTL ? ' dir="rtl"' : '';
+  const posLabel = card.pos ? `<div class="pos">${card.pos}</div>` : '';
+  const lemmaLabel = (card.lemma && card.lemma !== card.term) ? `<div class="lemma"${dirAttr}>${escapeHtml(card.lemma)}</div>` : '';
+  if (!flashState.flipped) {
+    body.innerHTML = `
+      <div class="flash-card" id="flashCard">
+        ${posLabel}
+        <div class="term"${dirAttr}>${escapeHtml(card.term)}</div>
+        ${lemmaLabel}
+        <div class="flip-hint">click to reveal</div>
+      </div>`;
+  } else {
+    body.innerHTML = `
+      <div class="flash-card" id="flashCard">
+        <div class="term"${dirAttr} style="font-size:20px;color:var(--muted)">${escapeHtml(card.term)}</div>
+        ${lemmaLabel}
+        <div class="translation">${escapeHtml(card.translation)}</div>
+      </div>`;
+  }
+  $('flashCard').addEventListener('click', () => {
+    flashState.flipped = !flashState.flipped;
+    showFlashCard();
+  });
+  updateFlashStats();
+}
+
+function updateFlashStats() {
+  if (!flashState) { $('flashStats').textContent = ''; return; }
+  const remaining = Math.max(0, flashState.queue.length - flashState.index);
+  $('flashStats').textContent = `${flashState.index}/${flashState.queue.length} · ${flashState.sessionCorrect}✓ ${flashState.sessionIncorrect}✗`;
+}
+
+$('flashCorrect').addEventListener('click', () => gradeCard(true));
+$('flashIncorrect').addEventListener('click', () => gradeCard(false));
+$('flashPlayAudio').addEventListener('click', () => {
+  if (!flashState) return;
+  const card = flashState.queue[flashState.index];
+  if (card) speak(card.term, flashState.lang);
+});
+
+function gradeCard(correct) {
+  if (!flashState) return;
+  const card = flashState.queue[flashState.index];
+  if (!card) return;
+  // Persist stats back to dictionary by matching lang+lemma
+  const dictEntry = dictionary.find(d => d.lang === card.lang && d.lemma === card.lemma);
+  if (dictEntry) {
+    if (correct) dictEntry.stats.correct++; else dictEntry.stats.incorrect++;
+    dictEntry.stats.lastSeen = Date.now();
+    save(LS.dictionary, dictionary);
+  }
+  if (correct) flashState.sessionCorrect++; else flashState.sessionIncorrect++;
+  flashState.index++;
+  flashState.flipped = false;
+  showFlashCard();
+}
+
+// ─── mobile tabs ──────────────────────────────────────────────────────
+function setMobileTab(tab) {
+  const m = $('main');
+  m.classList.remove('tab-history', 'tab-center', 'tab-right');
+  m.classList.add(`tab-${tab}`);
+  document.querySelectorAll('#tabBar button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+}
+document.querySelectorAll('#tabBar button').forEach(b => b.addEventListener('click', () => setMobileTab(b.dataset.tab)));
+
+// ─── wire up ──────────────────────────────────────────────────────────
+translateBtn.addEventListener('click', doTranslate);
+clearBtn.addEventListener('click', clearCenter);
+newBtn.addEventListener('click', clearCenter);
+sourceInput.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); doTranslate(); }
+});
+
+// Initial render
+renderHistory();
+renderLangSwitcher();
+renderWords(null);
+if (passages.length > 0) loadPassage(passages[0].id);
+
+// Prompt for API key on first load
+if (!apiCfg || !apiCfg.key) openSettings();
+
+// Footer last-updated
+fetch('https://api.github.com/repos/em0ney/tools/commits?path=lingua.html&per_page=1')
+  .then(r => r.json())
+  .then(data => {
+    const date = data?.[0]?.commit?.committer?.date;
+    if (date) {
+      const formatted = new Date(date).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric'
+      });
+      $('lastUpdated').textContent = `updated ${formatted}`;
+    }
+  })
+  .catch(() => {});
+</script>
+</body>
+</html>
